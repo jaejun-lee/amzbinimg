@@ -42,12 +42,12 @@ class ModelXception(object):
             fine tune last convolutional block  by training on data set
     '''
 
-    def __init__(self, img_dir= "../data/bin-images/", meta_dir = "../data/metadata/", num_of_class=5, batch_size=32):
+    def __init__(self, img_dir= "../data/bin-images/", meta_dir = "../data/metadata/", num_of_class=5, batch_size=32, num_of_data = 1000):
         self.img_dir = img_dir
         self.meta_dir = meta_dir
         self.batch_size = batch_size
         self.num_of_class = num_of_class 
-        df = dataset.make_counting_df(img_dir, meta_dir, limit = self.num_of_class, num_of_data = 1000)
+        df = dataset.make_counting_df(img_dir, meta_dir, limit = self.num_of_class, num_of_data = num_of_data)
         self.train_df = df.sample(frac=0.80, random_state=45)
         self.test_df = df.copy()
         self.test_df = self.test_df.drop(self.train_df.index)    
@@ -216,6 +216,7 @@ class ModelXception(object):
 
         # ADD TOP
         model = base_model.output
+        model = Flatten()(model)
         model = Dense(256, activation='relu')(model)
         model = Dropout(0.5)(model)
         predictions = Dense(self.num_of_class + 1, activation='softmax')(model)

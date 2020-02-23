@@ -11,8 +11,8 @@ from sklearn.model_selection import train_test_split
 import sys
 import tensorflow as tf
 
-IMAGE_DATA_PATH = '../../dsi-capstone-data/data/bin-images/'
-JSON_DATA_PATH = '../../dsi-capstone-data/data/metadata/'
+IMAGE_DATA_PATH = '../data/bin-images/'
+JSON_DATA_PATH = '../data/metadata/'
 
 class ImageProcessing(object):
     '''

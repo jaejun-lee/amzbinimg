@@ -222,7 +222,7 @@ class ModelXception(object):
         
         model = Model(inputs=base_model.input, outputs=predictions)
 
-        model.compile(optimizer=optimizers.RMSprop(lr=0.0005), loss='categorical_crossentropy', metrics=['accuracy'])
+        model.compile(optimizer=optimizers.RMSprop(lr=0.0005), loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 
         model.fit(
             x=train_generator,
@@ -241,7 +241,7 @@ class ModelXception(object):
             validation_freq=1,
             max_queue_size=10,
             #workers=1,
-            use_multiprocessing=False,
+            #use_multiprocessing=False,
         )
 
         model.evaluate(
@@ -254,7 +254,7 @@ class ModelXception(object):
             callbacks=None,
             max_queue_size=10,
             #workers=1,
-            use_multiprocessing=False
+            #use_multiprocessing=False
         )
 
     

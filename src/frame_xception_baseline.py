@@ -23,6 +23,9 @@ import numpy as np
 
 from sklearn.metrics import mean_squared_error
 
+import gc
+
+
 class framework_baseline(object):
     '''
     This class provides functions to train baseline model based on the 
@@ -41,14 +44,10 @@ class framework_baseline(object):
         run_base_model()
     '''
 
-    def __init__(self, X_train, y_train, X_test, y_test, batch_size=32):
-        self.X_train = X_train
-        self.y_train = y_train
-        self.X_test = X_test
-        self.y_test = y_test
+    def __init__(self, batch_size=32):
         self.batch_size = batch_size
 
-    def load_datagenerators(self, input_size = (299, 299)):
+    def load_datagenerators(self, X_train, y_train, X_test, y_test, input_size = (299, 299)):
         '''
         ImageDataGenerator with Pandas Dataframe id:image file path, label:count as string.
         '''
@@ -95,27 +94,35 @@ class framework_baseline(object):
             data_format='channels_last')                # default
         
         self.train_generator=train_datagen.flow(
-            self.X_train,
-            self.y_train,    # labels just get passed through
+            X_train,
+            y_train,    # labels just get passed through
             batch_size=self.batch_size,
             shuffle=True,
             subset = "training",
             seed=None)
 
         self.valid_generator=train_datagen.flow(
-            self.X_train,
-            self.y_train,    # labels just get passed through
+            X_train,
+            y_train,    # labels just get passed through
             batch_size=self.batch_size,
             shuffle=True,
             subset = "validation",
             seed=None)
 
+        del X_train
+        del y_train
+        gc.collect()
+
         self.test_generator = test_datagen.flow(
-            self.X_test,
-            self.y_test, # labels just get passed through
+            X_test,
+            y_test, # labels just get passed through
             batch_size=self.batch_size,
             shuffle=False,
             seed=None)
+
+        del X_test
+        del y_test
+        gc.collect()
 
         self.STEP_SIZE_TRAIN=self.train_generator.n//self.train_generator.batch_size
         self.STEP_SIZE_VALID=self.valid_generator.n//self.valid_generator.batch_size
@@ -198,74 +205,7 @@ class framework_baseline(object):
 
         
     def run_base_model(self):
-        
-        input_size = (299,299,3)
-
-        # Prepare Datasets
-        self.load_datagenerators()  
-
-        # load base model
-        self.load_base_model(input_size)
-
-        # load top model
-        top_model = self.base_model.output
-        top_model = Flatten()(top_model)
-        top_model = Dense(256, activation='relu')(top_model)
-        top_model = Dropout(0.5)(top_model)
-        predictions = Dense(1, activation='relu')(top_model)
-
-        # stack
-        self.model = Model(inputs= self.base_model.input, outputs= predictions)
-        #print(model.summary())
-
-        # set trainable layer to top layers only
-        change_trainable_layers(self.model, 132)
-
-        # compile the model with a SGD/momentum optimizer
-        # and a very slow learning rate.
-        self.model.compile(loss='mean_squared_error',
-                      optimizer=optimizers.SGD(lr=1e-4, momentum=0.9),
-                      metrics=['accuracy', 'mae'])
-
-        
-        
-        print('\nFitting the model ... ...')
-        log_dir="../logs/fit/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
-        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
-        
-        self.history = self.model.fit(
-            x=self.train_generator,
-            #y=self.train_df['label'].values,
-            #generator = train_generator,
-            batch_size=None,
-            epochs=1,
-            verbose=1,
-            validation_data=self.valid_generator,
-            #shuffle=False,
-            #class_weight=None,
-            #sample_weight=None,
-            #initial_epoch=0,
-            steps_per_epoch=self.STEP_SIZE_TRAIN,
-            validation_steps=self.STEP_SIZE_VALID,
-            #validation_freq=1,
-            max_queue_size=self.batch_size*8,
-            #workers=4,
-            use_multiprocessing=False,
-            callbacks=[tensorboard_callback]
-        )
-
-        self.model.evaluate(
-            x=self.test_generator,
-            y=None,
-            batch_size=None,
-            verbose=1,
-            sample_weight=None,
-            steps=self.STEP_SIZE_VALID,
-            callbacks=None,
-            max_queue_size=self.batch_size*8,
-            #workers=1,
-            use_multiprocessing=False
-        )
+        pass
 
 def change_trainable_layers(model, trainable_index):
     for layer in model.layers[:trainable_index]:
@@ -311,9 +251,78 @@ if __name__ == '__main__':
     stop_time = dt.datetime.now()
     print("Loading arrays took ", (stop_time - start_time).total_seconds(), "s.\n")
 
-    frame = framework_baseline(X_train, y_train, X_test, y_test, batch_size=32)
-    frame.run_base_model()
+    frame = framework_baseline(batch_size=32)
 
+    input_size = (299,299,3)
+
+    # Prepare Datasets
+    frame.load_datagenerators(X_train, y_train, X_test, y_test, input_size = (299, 299))  
+
+    # load base model
+    base_model = Xception(weights='imagenet',
+                          include_top=False,
+                          input_shape=(299, 299, 3))
+
+    # load top model
+    top_model = base_model.output
+    top_model = Flatten()(top_model)
+    top_model = Dense(256, activation='relu')(top_model)
+    top_model = Dropout(0.5)(top_model)
+    predictions = Dense(1, activation='relu')(top_model)
+
+    # stack
+    model = Model(inputs= base_model.input, outputs= predictions)
+    #print(model.summary())
+
+    # set trainable layer to top layers only
+    change_trainable_layers(model, 132)
+
+    # compile the model with a SGD/momentum optimizer
+    # and a very slow learning rate.
+    model.compile(loss='mean_squared_error',
+                    optimizer=optimizers.SGD(lr=1e-4, momentum=0.9),
+                    metrics=['accuracy', 'mae'])
+
+    
+    
+    print('\nFitting the model ... ...')
+    log_dir="../logs/fit/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+    
+    history = model.fit(
+        x=frame.train_generator,
+        #y=self.train_df['label'].values,
+        #generator = train_generator,
+        batch_size=None,
+        epochs=1,
+        verbose=1,
+        validation_data=frame.valid_generator,
+        #shuffle=False,
+        #class_weight=None,
+        #sample_weight=None,
+        #initial_epoch=0,
+        steps_per_epoch=frame.STEP_SIZE_TRAIN,
+        validation_steps=frame.STEP_SIZE_VALID,
+        #validation_freq=1,
+        max_queue_size=frame.batch_size*8,
+        #workers=4,
+        use_multiprocessing=False,
+        callbacks=[tensorboard_callback]
+    )
+
+    model.evaluate(
+        x=frame.test_generator,
+        y=None,
+        batch_size=None,
+        verbose=1,
+        sample_weight=None,
+        steps=frame.STEP_SIZE_VALID,
+        callbacks=None,
+        max_queue_size=self.batch_size*8,
+        #workers=1,
+        use_multiprocessing=False
+    )
+    
     '''
     display_grid = np.zeros((7*2048//16, 16*7))
     for col in range(2048//16):

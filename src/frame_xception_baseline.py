@@ -218,12 +218,16 @@ class framework_baseline(object):
         self.model = Model(inputs= self.base_model.input, outputs= predictions)
         #print(model.summary())
 
+        # set trainable layer to top layers only
+        change_trainable_layers(self.model, 132)
+
         # compile the model with a SGD/momentum optimizer
         # and a very slow learning rate.
         self.model.compile(loss='mean_squared_error',
                       optimizer=optimizers.SGD(lr=1e-4, momentum=0.9),
                       metrics=['accuracy', 'mae'])
 
+        
         
         print('\nFitting the model ... ...')
         log_dir="../logs/fit/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -279,6 +283,16 @@ def process_img(filename):
     image_batch = np.expand_dims(numpy_image, axis =0)
 
     return image_batch
+
+def print_model_properties(model, indices = 0):
+     for i, layer in enumerate(model.layers[indices:]):
+        print(f"Layer {i+indices} | Name: {layer.name} | Trainable: {layer.trainable}")
+
+def change_trainable_layers(model, trainable_index):
+    for layer in model.layers[:trainable_index]:
+        layer.trainable = False
+    for layer in model.layers[trainable_index:]:
+        layer.trainable = True
 
 def main():
 

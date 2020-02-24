@@ -317,7 +317,7 @@ if __name__ == '__main__':
     random.seed(39)
     np.random.seed(39)
     tensorflow.compat.v1.set_random_seed(39)
-    img_proc = ImageProcessing(5000)
+    img_proc = ImageProcessing(500000)
     img_proc.pre_process_images(target_size=(299,299),
                                 max_qty=5,    # ignored if empty_bins=True
                                 empty_bins=False)

@@ -6,6 +6,7 @@ imt.reload(dataset)
 import datetime as dt
 import tensorflow as tf
 
+
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Dense, Activation, Flatten, Dropout, BatchNormalization
@@ -40,16 +41,12 @@ class framework_baseline(object):
         run_base_model()
     '''
 
-    def __init__(self, img_dir= "../data/bin-images/", meta_dir = "../data/metadata/", num_of_class=5, batch_size=32, num_of_data = 1000):
-        self.img_dir = img_dir
-        self.meta_dir = meta_dir
+    def __init__(self, X_train, y_train, X_test, y_test, batch_size=32):
+        self.X_train = X_train
+        self.y_train = y_train
+        self.X_test = X_test
+        self.y_test = y_test
         self.batch_size = batch_size
-        self.num_of_class = num_of_class 
-        df = dataset.make_counting_df(img_dir, meta_dir, limit = self.num_of_class, num_of_data = num_of_data)
-        self.train_df = df.sample(frac=0.80, random_state=45)
-        self.test_df = df.copy()
-        self.test_df = self.test_df.drop(self.train_df.index)    
-        self.test_label = self.test_df['label'].values
 
     def load_datagenerators(self, input_size = (299, 299)):
         '''
@@ -73,8 +70,9 @@ class framework_baseline(object):
             vertical_flip=False,                        # default
             rescale=1./255,                             # rescale RGB vales
             preprocessing_function=None,                # default
-            data_format='channels_last',                 # default
-            validation_split=0.20)                      # default
+            validation_split = 0.2,
+            data_format='channels_last'                 # default
+            )                      # default
         
         test_datagen = ImageDataGenerator(featurewise_center=False,  # default
             samplewise_center=False,                    # default
@@ -96,46 +94,32 @@ class framework_baseline(object):
             preprocessing_function=None,                # default
             data_format='channels_last')                # default
         
-        self.train_generator=train_datagen.flow_from_dataframe(
-            dataframe=self.train_df,
-            directory=self.img_dir,
-            x_col="id",
-            y_col="label",
-            subset="training",
+        self.train_generator=train_datagen.flow(
+            self.X_train,
+            self.y_train,    # labels just get passed through
             batch_size=self.batch_size,
-            seed=42,
             shuffle=True,
-            class_mode="raw",
-            target_size=input_size)
+            subset = "training",
+            seed=None)
 
-        self.valid_generator=train_datagen.flow_from_dataframe(
-            dataframe=self.train_df,
-            directory=self.img_dir,
-            x_col="id",
-            y_col="label",
-            subset="validation",
+        self.valid_generator=train_datagen.flow(
+            self.X_train,
+            self.y_train,    # labels just get passed through
             batch_size=self.batch_size,
-            seed=42,
             shuffle=True,
-            class_mode="raw",
-            target_size=input_size)
+            subset = "validation",
+            seed=None)
 
-        self.test_generator=test_datagen.flow_from_dataframe(
-            dataframe=self.test_df,
-            directory=self.img_dir,
-            x_col="id",
-            y_col=None,
+        self.test_generator = test_datagen.flow(
+            self.X_test,
+            self.y_test, # labels just get passed through
             batch_size=self.batch_size,
-            seed=42,
             shuffle=False,
-            class_mode=None,
-            target_size=input_size)
+            seed=None)
 
         self.STEP_SIZE_TRAIN=self.train_generator.n//self.train_generator.batch_size
         self.STEP_SIZE_VALID=self.valid_generator.n//self.valid_generator.batch_size
         self.STEP_SIZE_TEST=self.test_generator.n//self.test_generator.batch_size
-
-        return self.test_generator, self.valid_generator, self.test_generator
         
     def save_bottlebeck_features(self):
 
@@ -211,7 +195,6 @@ class framework_baseline(object):
                           include_top=False,
                           input_shape=input_shape)
 
-        return self.base_model
 
         
     def run_base_model(self):
@@ -219,36 +202,41 @@ class framework_baseline(object):
         input_size = (299,299,3)
 
         # Prepare Datasets
-        train_generator, valid_generator, test_generator  = self.load_datagenerators()        
+        self.load_datagenerators()  
 
         # load base model
-        base_model = self.load_base_model(input_size)
+        self.load_base_model(input_size)
 
         # load top model
-        top_model = base_model.output
+        top_model = self.base_model.output
+        top_model = Flatten()(top_model)
         top_model = Dense(256, activation='relu')(top_model)
         top_model = Dropout(0.5)(top_model)
         predictions = Dense(1, activation='relu')(top_model)
 
         # stack
-        self.model = Model(inputs= base_model.input, outputs= predictions)
+        self.model = Model(inputs= self.base_model.input, outputs= predictions)
         #print(model.summary())
 
         # compile the model with a SGD/momentum optimizer
         # and a very slow learning rate.
         self.model.compile(loss='mean_squared_error',
                       optimizer=optimizers.SGD(lr=1e-4, momentum=0.9),
-                      metrics=['mae'])
+                      metrics=['accuracy', 'mae'])
 
-        self.model.fit(
-            x=train_generator,
+        
+        print('\nFitting the model ... ...')
+        log_dir="../logs/fit/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+        
+        self.history = self.model.fit(
+            x=self.train_generator,
             #y=self.train_df['label'].values,
             #generator = train_generator,
             batch_size=None,
-            epochs=10,
+            epochs=1,
             verbose=1,
-            callbacks=None,
-            validation_data=valid_generator,
+            validation_data=self.valid_generator,
             #shuffle=False,
             #class_weight=None,
             #sample_weight=None,
@@ -256,22 +244,23 @@ class framework_baseline(object):
             steps_per_epoch=self.STEP_SIZE_TRAIN,
             validation_steps=self.STEP_SIZE_VALID,
             #validation_freq=1,
-            #max_queue_size=10,
-            #workers=1,
-            #use_multiprocessing=False,
+            max_queue_size=self.batch_size*8,
+            #workers=4,
+            use_multiprocessing=False,
+            callbacks=[tensorboard_callback]
         )
 
         self.model.evaluate(
-            x=test_generator,
+            x=self.test_generator,
             y=None,
             batch_size=None,
             verbose=1,
             sample_weight=None,
             steps=self.STEP_SIZE_VALID,
             callbacks=None,
-            max_queue_size=10,
+            max_queue_size=self.batch_size*8,
             #workers=1,
-            #use_multiprocessing=False
+            use_multiprocessing=False
         )
 
 def change_trainable_layers(model, trainable_index):
@@ -297,7 +286,18 @@ def main():
 
 if __name__ == '__main__':
 
-    frame = framework_baseline(num_of_class=5, num_of_data=1000 )
+
+    # get pre-processed image and label data
+    print('\nLoading numpy arrays ... ...')
+    start_time = dt.datetime.now()
+    X_train = np.load('../data/processed_training_images.npy')
+    X_test = np.load('../data/processed_test_images.npy')
+    y_train = np.load('../data/training_labels.npy')
+    y_test = np.load('../data/test_labels.npy')
+    stop_time = dt.datetime.now()
+    print("Loading arrays took ", (stop_time - start_time).total_seconds(), "s.\n")
+
+    frame = framework_baseline(X_train, y_train, X_test, y_test, batch_size=32)
     frame.run_base_model()
 
     '''

@@ -35,7 +35,7 @@ def make_counting_list(img_dir,meta_dir, limit = 5, num_of_data = 1000):
             d = json.loads(open(json_path).read())
             quantity = get_quantity(d)
             if quantity <= limit:
-                lst_count.append([jpg_name, quantity])
+                lst_count.append([jpg_name, [quantity, quantity]])
 
     print("get_metadata: Available Images: %d" % len(lst_count))
     return lst_count
@@ -43,10 +43,10 @@ def make_counting_list(img_dir,meta_dir, limit = 5, num_of_data = 1000):
 def make_counting_df(img_dir,meta_dir, limit = 5, num_of_data = 1000):
     lst_count = make_counting_list(img_dir,meta_dir, limit, num_of_data)
     df = pd.DataFrame(lst_count, columns=["id", "label"])
-    df['label'] = df['label'].apply(str)
+    #df['label'] = df['label'].apply(str)
     return df
 
 if __name__ == "__main__":
 
-    df = make_counting_df(img_dir,meta_dir, 7)
-
+    #df = make_counting_df(img_dir,meta_dir, 7)
+    pass

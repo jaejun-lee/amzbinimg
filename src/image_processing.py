@@ -1,12 +1,15 @@
 import datetime as dt
 import json
-from keras.preprocessing.image import img_to_array
+from tensorflow.keras.preprocessing.image import img_to_array
+import tensorflow
 import numpy as np
+import os
 from os import listdir
 from os.path import isfile, join
 from PIL import Image
-import random
 from resizeimage import resizeimage
+
+import random
 from sklearn.model_selection import train_test_split
 import sys
 import tensorflow as tf
@@ -28,7 +31,7 @@ class ImageProcessing(object):
             reads images, converts data to arrays, and resizes to a common size.
     '''
 
-    def __init__(self):
+    def __init__(self, num_of_images=1000):
         '''
         Instance Variables:
             -   image_files
@@ -38,7 +41,7 @@ class ImageProcessing(object):
             -   missing_labels  (only needed during initial EDA)
         '''
         # get an array of image and json file names, randomly shuffled
-        self.image_files, self.json_files = self._get_file_name_arrays()
+        self.image_files, self.json_files = self._get_file_name_arrays(num_of_images=num_of_images)
         # get an array of labels in the same shuffled order as the image and
         # json files
         self.labels = self._extract_labels()
@@ -48,7 +51,7 @@ class ImageProcessing(object):
         self.missing_labels = self._get_missing_labels()
         pass
 
-    def pre_process_images(self, target_size=(150,150), max_qty=None, empty_bins=False):
+    def pre_process_images(self, target_size=(299,299), max_qty=None, empty_bins=False):
         '''
         Pre-process all images and save data as numpy arrays to disk. This is
         called from the terminal, then the model accesses the saved numpy
@@ -112,7 +115,7 @@ class ImageProcessing(object):
 
         print('\nSaving the processed training images array ... ...')
         print("Size of numpy array = ", sys.getsizeof(arr))
-        np.save('../../dsi-capstone-data/processed_training_images.npy', arr)
+        np.save('../data/processed_training_images.npy', arr)
 
         # create the processed test image array. Pixel values saved are
         # uint8 to save space. Normalization needs to be done in the model?
@@ -132,13 +135,13 @@ class ImageProcessing(object):
 
         print('\nSaving the processed test images array ... ...')
         print("Size of numpy array = ", sys.getsizeof(arr))
-        np.save('../../dsi-capstone-data/processed_test_images.npy', arr)
+        np.save('../data/processed_test_images.npy', arr)
 
         print('\nSaving the train/test label arrays ... ...')
         print("Size of training labels numpy array = ", sys.getsizeof(train_lbl))
-        np.save('../../dsi-capstone-data/training_labels.npy', train_lbl)
+        np.save('../data/training_labels.npy', train_lbl)
         print("Size of test labels numpy array = ", sys.getsizeof(test_lbl))
-        np.save('../../dsi-capstone-data/test_labels.npy', test_lbl)
+        np.save('../data/test_labels.npy', test_lbl)
 
         pass
 
@@ -162,19 +165,40 @@ class ImageProcessing(object):
         print("Extracting took ", (stop_time - start_time).total_seconds(), "s.\n")
         return np.array(labels).astype(np.uint8)
 
-    def _get_file_name_arrays(self):
+    def _get_file_name_arrays(self, num_of_images=1000):
         '''
         Return arrays of image file names and JSON file names, randomly
         shuffled but maintaining consistent order between the two
         '''
         print("\nScanning and shuffling image and json files and ... ...")
         start_time = dt.datetime.now()
-        # get list of all image files and sort by file name
-        img_file_list = [f for f in listdir(IMAGE_DATA_PATH) if isfile(join(IMAGE_DATA_PATH, f))]
-        img_file_list.sort()
-        # get list of all json files and sort by file name
-        json_file_list = [f for f in listdir(JSON_DATA_PATH) if isfile(join(JSON_DATA_PATH, f))]
-        json_file_list.sort()
+
+        img_list = listdir(IMAGE_DATA_PATH)
+
+        N = 535234
+        if len(img_list) < num_of_images:
+            N = len(img_list)
+        else:
+            N = num_of_images
+
+        img_file_list = []
+        json_file_list = []
+        #print(f"N: {N}")
+        for i in range(N):
+            if i%1000 == 0:
+                print("reading (%d/%d)..." % (i,N))
+
+            jpg_path = '%s%05d.jpg' % (IMAGE_DATA_PATH,i+1)
+            jpg_name = '%05d.jpg' % (i+1)
+            json_path = '%s%05d.json' % (JSON_DATA_PATH,i+1)
+            json_name = '%05d.json' % (i+1)
+
+            #print(f"before: {jpg_path}, {json_path}")
+
+            if os.path.isfile(jpg_path) and os.path.isfile(json_path):
+                #print(f"Appended: {jpg_path}, {json_path}")
+                img_file_list.append(jpg_name)          
+                json_file_list.append(json_name)
 
         # randomly shuffle the image list and make json list consistent
         new_list = list(zip(img_file_list, json_file_list))
@@ -280,18 +304,20 @@ class ImageProcessing(object):
 def main():
     random.seed(39)
     np.random.seed(39)
-    tf.set_random_seed(39)
-    img_proc = ImageProcessing()
-    img_proc.pre_process_images(target_size=(224,224),
+    tensorflow.compat.v1.set_random_seed(39)
+    img_proc = ImageProcessing(3000)
+    img_proc.pre_process_images(target_size=(299,299),
                                 max_qty=5,    # ignored if empty_bins=True
                                 empty_bins=False)
 
 
-
-
-
-
-
-
 if __name__ == '__main__':
-    main()
+    #main()
+
+    random.seed(39)
+    np.random.seed(39)
+    tensorflow.compat.v1.set_random_seed(39)
+    img_proc = ImageProcessing(5000)
+    img_proc.pre_process_images(target_size=(299,299),
+                                max_qty=5,    # ignored if empty_bins=True
+                                empty_bins=False)

@@ -16,6 +16,8 @@ import tensorflow as tf
 
 IMAGE_DATA_PATH = '../data/bin-images/'
 JSON_DATA_PATH = '../data/metadata/'
+SMALL_IMAGE_DATA_PATH = '../data/clean-images/'
+
 
 class ImageProcessing(object):
     '''
@@ -144,6 +146,26 @@ class ImageProcessing(object):
         np.save('../data/test_labels.npy', test_lbl)
 
         pass
+
+    def resize_to_small_images(self, target_size=(299,299), max_qty=None, empty_bins=False):
+        '''        
+        '''
+        # filter out the image files, json files, and labels that exceed the
+        # maximum quantity. This is to strip out the the outliers (bin
+        # quanities that are too large to detect)
+        self._screen_data_by_qty(max_qty, empty_bins)
+
+        # create the processed training image array. Pixel values saved are
+        # uint8 to save space. Normalization needs to be done in the model.
+        print('\nresize images and save to clean image directory... ...')
+        for idx, img in enumerate(self.image_files):
+            with open(IMAGE_DATA_PATH + img, 'r+b') as f:
+                with Image.open(f) as image:
+                    image = image.resize(target_size, Image.ANTIALIAS)
+                    image.save(SMALL_IMAGE_DATA_PATH + img, 'JPEG')
+
+            if (idx + 1) % 100 == 0:
+                print(idx+1, "out of", len(self.image_files), "images have been processed")
 
     '''----------------------------------------------------------------------
     Private functions of the ImageProcessing class
@@ -317,7 +339,11 @@ if __name__ == '__main__':
     random.seed(39)
     np.random.seed(39)
     tensorflow.compat.v1.set_random_seed(39)
-    img_proc = ImageProcessing(500000)
-    img_proc.pre_process_images(target_size=(299,299),
+    img_proc = ImageProcessing(19990)
+    #img_proc.pre_process_images(target_size=(299,299),
+    #                            max_qty=5,    # ignored if empty_bins=True
+    #                            empty_bins=False)
+
+    img_proc.resize_to_small_images(target_size=(299,299),
                                 max_qty=5,    # ignored if empty_bins=True
                                 empty_bins=False)

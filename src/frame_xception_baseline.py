@@ -112,6 +112,8 @@ class framework_baseline(object):
         del X_train
         del y_train
         gc.collect()
+        self.STEP_SIZE_TRAIN=self.train_generator.n//self.train_generator.batch_size
+        self.STEP_SIZE_VALID=self.valid_generator.n//self.valid_generator.batch_size
 
         self.test_generator = test_datagen.flow(
             X_test,
@@ -310,18 +312,28 @@ if __name__ == '__main__':
         callbacks=[tensorboard_callback]
     )
 
+    print('\nValidationg the model ... ...')
+    log_dir="../logs/validation/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
     model.evaluate(
-        x=frame.test_generator,
-        y=None,
-        batch_size=None,
-        verbose=1,
-        sample_weight=None,
-        steps=frame.STEP_SIZE_VALID,
-        callbacks=None,
-        max_queue_size=self.batch_size*8,
-        #workers=1,
-        use_multiprocessing=False
-    )
+            x=frame.test_generator,
+            y=None,
+            batch_size=None,
+            verbose=1,
+            sample_weight=None,
+            steps=frame.STEP_SIZE_TEST,
+            max_queue_size=frame.batch_size*8,
+            #workers=1,
+            use_multiprocessing=False,
+            callbacks=[tensorboard_callback]
+        )
+
+    pred = model.predict(x=frame.test_generator,
+            steps=frame.STEP_SIZE_TEST,
+            max_queue_size=frame.batch_size*8,
+            #workers=8,
+            use_multiprocessing=False,
+            verbose=True)
     
     '''
     display_grid = np.zeros((7*2048//16, 16*7))

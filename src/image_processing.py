@@ -7,7 +7,7 @@ import os
 from os import listdir
 from os.path import isfile, join
 from PIL import Image
-from resizeimage import resizeimage
+#from resizeimage import resizeimage
 
 import random
 from sklearn.model_selection import train_test_split

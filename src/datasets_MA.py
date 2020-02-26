@@ -1,15 +1,36 @@
 import skimage
 from skimage.io import imread
 from skimage.io import imsave
+from PIL import Image
 
 import os
 from os import listdir
 import matplotlib.pyplot as plt
 import numpy as np
 
+from sklearn.model_selection import train_test_split
+
 ORIGINAL_IMAGE_PATH = "../data/clean-images/"
 X_IMAGE_PATH = "../data/x_images/"
 Y_IMAGE_PATH = "../data/y_images/"
+
+def load_data():
+
+    lst_images = listdir(X_IMAGE_PATH)
+    X_images = []
+    y_images = []
+    for fn_image in lst_images:
+        x_path = f"{X_IMAGE_PATH}{fn_image}"
+        y_path = f"{Y_IMAGE_PATH}{fn_image}" 
+        if os.path.isfile(x_path) and os.path.isfile(y_path):
+            X_images.append(imread(x_path))
+            y_images.append(imread(y_path))
+    
+    X = np.stack(X_images).astype('uint8')
+    y = np.stack(y_images).astype('uint8')
+    
+    return train_test_split(X, y, test_size=0.1, random_state=42)
+
 
 def load_images():
     img_list = listdir(ORIGINAL_IMAGE_PATH)
@@ -65,6 +86,13 @@ def save_images(x_image, y_image, file_name):
 
     imsave(f"{X_IMAGE_PATH}{file_name:04}.png", x_image)
     imsave(f"{Y_IMAGE_PATH}{file_name:04}.png", y_image)
+
+
+if __name__ == '__main__':
+
+    pass
+
+
 
 
 

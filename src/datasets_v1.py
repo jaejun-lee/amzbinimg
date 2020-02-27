@@ -11,8 +11,8 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 ORIGINAL_IMAGE_PATH = "../data/clean-images/"
-X_IMAGE_PATH = "../data/x_images/"
-Y_IMAGE_PATH = "../data/y_images/"
+X_IMAGE_PATH = "../data/x_images_v1/"
+Y_IMAGE_PATH = "../data/y_images_v1/"
 
 def load_data():
 
@@ -70,7 +70,7 @@ def show_images(images, column = 0):
     INPUT: np array - images
            col - integer 0 - 9
     '''
-    fig, axes = plt.subplots(ncols=10,nrows=1, sharex=True, sharey=True, figsize=(10, 10))
+    _, axes = plt.subplots(ncols=10,nrows=1, sharex=True, sharey=True, figsize=(10, 10))
     for i, ax in enumerate(axes.flat):
         ax.imshow(images[(i * 10) + column])
         ax.set_title((i * 10) + column)

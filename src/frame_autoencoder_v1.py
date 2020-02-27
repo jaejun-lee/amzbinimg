@@ -1,6 +1,6 @@
 import importlib as imt
-import datasets_MA
-imt.reload(datasets_MA)
+import datasets_v1
+imt.reload(datasets_v1)
 
 import datetime as dt
 import tensorflow as tf
@@ -48,11 +48,11 @@ class frame_autoencoder(object):
         self.latent_dim = latent_dim
         self.layer_filters = layer_filters
     
-    def load_and_condition_MA_data(self):
+    def load_and_condition_datasets_v1(self):
         '''
         load and shape 30x30x3 images from x_images
         '''
-        X_train, X_test, y_train, y_test = datasets_MA.load_data()
+        X_train, X_test, y_train, y_test = datasets_v1.load_data()
         X_train = X_train.astype('float32') / 255 #-5
         X_test = X_test.astype('float32') / 255
         y_train = y_train.astype('float32') / 255
@@ -170,7 +170,7 @@ def visualize(img, encoder, decoder):
 def run_baseline_autoencoder():
     
     frame = frame_autoencoder(latent_dim=64)
-    frame.load_and_condition_MA_data()
+    frame.load_and_condition_datasets_v1()
     frame.build_baseline_autoencoder()
     
     inp = Input(frame.input_shape)
@@ -180,11 +180,11 @@ def run_baseline_autoencoder():
     autoencoder = Model(inp,reconstruction)
     autoencoder.compile(optimizer='adamax', loss='mse')
 
-    # history = autoencoder.fit(x=frame.X_train, y=frame.y_train, epochs=20,
-    #             validation_data=[frame.X_test, frame.y_test])
+    history = autoencoder.fit(x=frame.X_train, y=frame.y_train, epochs=20,
+                validation_split=0.2)
 
-    history = autoencoder.fit(x=frame.X_train, y=frame.X_train, epochs=10,
-                validation_data=[frame.X_test, frame.X_test])
+    # history = autoencoder.fit(x=frame.X_train, y=frame.X_train, epochs=10,
+    #             validation_data=[frame.X_test, frame.X_test])
     
     return history
 
@@ -205,7 +205,7 @@ if __name__ == '__main__':
     #                 epochs=2,
     #                 batch_size=frame.batch_size)
     
-    run_baseline_autoencoder()
+    history = run_baseline_autoencoder()
     
     # for i in range(5):
     #     img = frame.X_test[i]

@@ -11,8 +11,8 @@ from skimage.color import rgb2gray
 from skimage.transform import resize
 from sklearn.model_selection import train_test_split
 
-TAPE_IMAGE_PATH = "../data/tape_images/"
-NOTAPE_IMAGE_PATH = "../data/notape_images/"
+TAPE_IMAGE_PATH = "../data/tape_images_v2/"
+NOTAPE_IMAGE_PATH = "../data/notape_images_v2/"
 X_IMAGE_PATH = "../data/x_images_v2/"
 Y_IMAGE_PATH = "../data/y_images_v2/"
 
@@ -78,13 +78,13 @@ def make_noise_images(test = True):
                 save_image(f"{file_name:05}.png", X_IMAGE_PATH, noise_image)
                 save_image(f"{file_name:05}.png", Y_IMAGE_PATH, notape_image)
 
-def resize_mask_images_to_tape_images_v2():
-    mask_files = listdir('../data/mask-images')
-    for image_fn in mask_files:
-        image = read_image(image_fn, '../data/mask-images/')
-        new_image = resize(image, (128, 128, 3), preserve_range = True)
-        new_image = new_image.astype(np.uint8)
-        save_image(image_fn, '../data/tape_images_v2/', new_image)
+# def resize_mask_images_to_tape_images_v3():
+#     mask_files = listdir('../data/mask-images')
+#     for image_fn in mask_files:
+#         image = read_image(image_fn, '../data/mask-images/')
+#         new_image = resize(image, (128, 128, 3), preserve_range = True)
+#         new_image = new_image.astype(np.uint8)
+#         save_image(image_fn, '../data/tape_images_v3/', new_image)
 
 def load_data():
 
@@ -113,6 +113,6 @@ def load_data():
 
 if __name__ == '__main__':
 
+    #make_noise_images()
     pass
-
 

@@ -6,6 +6,15 @@ import random
 import json
 import pandas as pd 
 
+import skimage
+from skimage.io import imread
+from skimage.io import imsave
+from PIL import Image
+
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+
 img_dir= "../data/bin-images/"
 meta_dir = "../data/metadata/"
 

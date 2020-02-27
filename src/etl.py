@@ -16,7 +16,6 @@ def download_objects(start=0, end=10):
         for i in range(0, start):
             fp.readline()
         
-            
         for i in range(start, end):
             str = fp.readline()
             image_obj = str.split()[3]
@@ -29,7 +28,6 @@ def download_objects(start=0, end=10):
             s3.download_file(BUCKET_NAME, image_obj, image_filepath)
             print(f"downloading {metadata_obj}")
             s3.download_file(BUCKET_NAME, metadata_obj, metadata_filepath)
-
 
 if __name__=="__main__":
     pass

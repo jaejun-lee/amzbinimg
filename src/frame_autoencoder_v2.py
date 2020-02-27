@@ -48,7 +48,7 @@ class frame_autoencoder(object):
         self.latent_dim = latent_dim
         self.layer_filters = layer_filters
     
-    def load_and_condition_dataset_v2_data(self):
+    def load_and_condition_dataset_v2(self):
         '''
         load and shape 128x128x3 images from x_images
         '''
@@ -180,28 +180,69 @@ def run_baseline_autoencoder():
     autoencoder = Model(inp,reconstruction)
     autoencoder.compile(optimizer='adamax', loss='mse')
 
-    history = autoencoder.fit(x=frame.y_train, y=frame.y_train, epochs=5, validation_split=0.2)
-    history = autoencoder.fit(x=frame.X_train, y=frame.y_train, epochs=5, validation_split=0.2)
+    log_dir="../logs/autoencoder/train/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=1)
+    history = autoencoder.fit(x=frame.X_train, 
+                            y=frame.y_train, 
+                            epochs=20, 
+                            validation_split=0.2,
+                            callbacks = [tensorboard])
+
+    #history = autoencoder.fit(x=frame.X_train, y=frame.y_train, epochs=5, validation_split=0.2)
     
+    log_dir="../logs/autoencoder/evaluate/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=1)    
+    frame.autoencoder.evaluate(x=frame.X_test, 
+                            y=frame.y_test, 
+                            #batch_size=frame.batch_size, 
+                            verbose=1, 
+                            callbacks=[tensorboard], 
+                            #max_queue_size=10, 
+                            #workers=1, 
+                            use_multiprocessing=False
+    )
+
     return history
 
+def run_convnet_autoencoder():
+
+    frame = frame_autoencoder(batch_size = 64, 
+                            kernel_size = 3, 
+                            latent_dim = 32, 
+                            layer_filters = [16, 32]
+    )
+    frame.load_and_condition_dataset_v2()
+    frame.load_encoder()
+    frame.load_decoder()
+    frame.load_autoencoder()
+
+    # Added for Tensorboard
+    log_dir="../logs/autoencoder/train/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=1)
+    history = frame.autoencoder.fit(x=frame.X_train,
+                    y=frame.y_train,
+                    epochs=20,
+                    validation_split=0.2,
+                    batch_size=frame.batch_size,
+                    callbacks = [tensorboard],
+                    use_multiprocessing=False
+    )
+    
+    log_dir="../logs/autoencoder/evaluate/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=1)    
+    frame.autoencoder.evaluate(x=frame.X_test, 
+                            y=frame.y_test, 
+                            batch_size=frame.batch_size, 
+                            verbose=1, 
+                            callbacks=[tensorboard], 
+                            #max_queue_size=10, 
+                            #workers=1, 
+                            use_multiprocessing=False
+    )
+
+    return history
 
 if __name__ == '__main__':
-
-    # frame = frame_autoencoder(latent_dim=64)
-    # frame.load_and_condition_MA_data()
-    # frame.load_encoder()
-    # frame.load_decoder()
-    # frame.load_autoencoder()
-
-    # # Added for Tensorboard
-    # tensorboard = TensorBoard(log_dir='./logs_autoencoder', histogram_freq=2)
-    # frame.autoencoder.fit(frame.X_train,
-    #                 frame.X_train,
-    #                 validation_data=(frame.X_test, frame.X_test),
-    #                 epochs=2,
-    #                 batch_size=frame.batch_size)
-    
     pass
 
 

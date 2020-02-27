@@ -170,7 +170,7 @@ def visualize(img, encoder, decoder):
 def run_baseline_autoencoder():
     
     frame = frame_autoencoder(latent_dim=64)
-    frame.load_and_condition_dataset_v2_data()
+    frame.load_and_condition_dataset_v2()
     frame.build_baseline_autoencoder()
     
     inp = Input(frame.input_shape)
@@ -192,7 +192,7 @@ def run_baseline_autoencoder():
     
     log_dir="../logs/autoencoder/evaluate/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=1)    
-    frame.autoencoder.evaluate(x=frame.X_test, 
+    autoencoder.evaluate(x=frame.X_test, 
                             y=frame.y_test, 
                             #batch_size=frame.batch_size, 
                             verbose=1, 

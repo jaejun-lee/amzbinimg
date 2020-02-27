@@ -15,6 +15,7 @@ TAPE_IMAGE_PATH = "../data/tape_images_v2/"
 NOTAPE_IMAGE_PATH = "../data/notape_images_v2/"
 X_IMAGE_PATH = "../data/x_images_v2/"
 Y_IMAGE_PATH = "../data/y_images_v2/"
+X_IMAGE_TEST_PATH = '../data/x_images/'
 
 def read_image(file_name, path):
     return imread(f"{path}{file_name}")
@@ -75,8 +76,8 @@ def make_noise_images(test = True):
             if tape_image.shape == notape_image.shape:
                 noise_image = make_noise_image(tape_image, notape_image)
                 file_name = next(file_numbers)
-                save_image(f"{file_name:05}.png", X_IMAGE_PATH, noise_image)
-                save_image(f"{file_name:05}.png", Y_IMAGE_PATH, notape_image)
+                save_image(f"{file_name:05}.jpg", X_IMAGE_PATH, noise_image)
+                save_image(f"{file_name:05}.jpg", Y_IMAGE_PATH, notape_image)
 
 # def resize_mask_images_to_tape_images_v3():
 #     mask_files = listdir('../data/mask-images')
@@ -110,9 +111,32 @@ def load_data():
     
     return train_test_split(X, y, test_size=0.1, random_state=42)
 
+def load_test_data(num = 5):
+    lst_images = listdir(X_IMAGE_TEST_PATH)
+    lst_images = lst_images[0:num]
+    X_images = []
+    image_shape = (128, 128, 3)
+    for fn_image in lst_images:
+        x_path = f"{X_IMAGE_TEST_PATH}{fn_image}"
+        x_image = imread(x_path)
+        if x_image.shape != image_shape:
+            print(f"image shape is not {image_shape}:{x_path}:{x_image.shape}")
+        else:
+            X_images.append(x_image)
+    X = np.stack(X_images).astype('uint8')
+    return X
+
+def resize_image(from_path, to_path, image_shape):
+    image = imread(from_path)
+    image = resize(image, image_shape, preserve_range=True)
+    image = image.astype(np.uint8)
+    imsave(to_path, image)
+
 
 if __name__ == '__main__':
 
     #make_noise_images()
     pass
+
+#resize_image('../data/bin-images/00009.jpg', '../data/x_images/00004.jpg', (128,128,3))
 

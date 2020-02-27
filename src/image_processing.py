@@ -16,7 +16,7 @@ import tensorflow as tf
 
 IMAGE_DATA_PATH = '../data/bin-images/'
 JSON_DATA_PATH = '../data/metadata/'
-SMALL_IMAGE_DATA_PATH = '../data/clean-images/'
+SMALL_IMAGE_DATA_PATH = '../data/x_images/'
 
 
 class ImageProcessing(object):
@@ -339,11 +339,11 @@ if __name__ == '__main__':
     random.seed(39)
     np.random.seed(39)
     tensorflow.compat.v1.set_random_seed(39)
-    img_proc = ImageProcessing(19990)
+    img_proc = ImageProcessing(100000)
     #img_proc.pre_process_images(target_size=(299,299),
     #                            max_qty=5,    # ignored if empty_bins=True
     #                            empty_bins=False)
 
-    img_proc.resize_to_small_images(target_size=(299,299),
+    img_proc.resize_to_small_images(target_size=(128,128),
                                 max_qty=5,    # ignored if empty_bins=True
                                 empty_bins=False)

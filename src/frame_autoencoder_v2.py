@@ -1,17 +1,22 @@
 import importlib as imt
-import dataset
-imt.reload(dataset)
+import datasets_v2
+imt.reload(datasets_v2)
 
 import datetime as dt
 import tensorflow as tf
 
+import skimage
+from skimage.io import imread
+from skimage.io import imsave
+from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
-from PIL import Image
 
 from tensorflow import keras
-from tensorflow.keras.layers import Activation, Dense, Input
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Activation, Dense, Input, InputLayer
 from tensorflow.keras.layers import Conv2D, Flatten
+from tensorflow.keras.layers import Conv3D, Conv3DTranspose
 from tensorflow.keras.layers import Reshape, Conv2DTranspose
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
@@ -23,51 +28,60 @@ np.random.seed(1) # get consistent results from a stochastic training process
 def plot_image_and_histogram(img):
     fig = plt.figure(figsize=(8,4))
     ax1 = fig.add_subplot(121)
-    ax1.imshow(img, cmap='gray')
+    ax1.imshow(img)
     ax1.set_title('Image')
     ax2 = fig.add_subplot(122)
-    ax2.hist(img.flatten(), color='gray', bins=25)
+    ax2.hist(img[:,:,0].flatten(), color='red', bins=25)
+    ax2.hist(img[:,:,1].flatten(), color='green', bins=25)
+    ax2.hist(img[:,:,2].flatten(), color='blue', bins=25)
     ax2.set_title('Histogram of pixel intensities')
     ax2.set_xlabel('Pixel intensity')
     ax2.set_ylabel('Count')
     plt.tight_layout(pad=1)
 
+
 class frame_autoencoder(object):
 
-    def __init__(self, batch_size = 128, kernel_size = 3, latent_dim = 16, layer_filters = [16, 32]):
+    def __init__(self, batch_size = 64, kernel_size = 3, latent_dim = 32, layer_filters = [16, 32]):
         self.batch_size = batch_size
         self.kernel_size = kernel_size
         self.latent_dim = latent_dim
         self.layer_filters = layer_filters
     
-    def load_and_condition_MNIST_data(self):
+    def load_and_condition_dataset_v2_data(self):
         '''
-        loads and shapes MNIST image data
-        input:  None
-        output: X_train (2D np array), X_test (2D np array)
+        load and shape 128x128x3 images from x_images
         '''
-        (x_train, y_train), (x_test, y_test) = mnist.load_data()
-        image_size = x_train.shape[1]
-        x_train = np.reshape(x_train, [-1, image_size, image_size, 1])
-        x_test = np.reshape(x_test, [-1, image_size, image_size, 1])
-        x_train = x_train.astype('float32') / 255
-        x_test = x_test.astype('float32') / 255
-        self.input_shape = (image_size, image_size, 1)
-        self.image_size = image_size
-        self.X_train = x_train
-        self.X_test = x_test
-        
-    
-    def load_noise_data(self):
-        noise = np.random.normal(loc=0.5, scale=0.5, size=self.X_train.shape)
-        X_train_noisy = self.X_train + noise
-        noise = np.random.normal(loc=0.5, scale=0.5, size=self.X_test.shape)
-        X_test_noisy = self.X_test + noise
-        X_train_noisy = np.clip(X_train_noisy, 0., 1.)
-        X_test_noisy = np.clip(X_test_noisy, 0., 1.)
-        self.X_train_noisy = X_train_noisy
-        self.X_test_noisy = X_test_noisy
+        X_train, X_test, y_train, y_test = datasets_v2.load_data()
+        X_train = X_train.astype('float32') / 255 #-5
+        X_test = X_test.astype('float32') / 255
+        y_train = y_train.astype('float32') / 255
+        y_test = y_test.astype('float32') / 255
 
+        self.image_size = X_train.shape[1]
+        self.input_shape = (self.image_size, self.image_size, 3)
+        self.X_train = X_train
+        self.X_test = X_test
+        self.y_train = y_train
+        self.y_test = y_test
+
+
+    def build_baseline_autoencoder(self):
+        # The encoder
+        encoder = Sequential()
+        encoder.add(InputLayer(self.input_shape))
+        encoder.add(Flatten())
+        encoder.add(Dense(self.latent_dim))
+
+        # The decoder
+        decoder = Sequential()
+        decoder.add(InputLayer((self.latent_dim)))
+        decoder.add(Dense(np.prod(self.input_shape))) # np.prod(img_shape) is the same as 32*32*3, it's more generic than saying 3072
+        decoder.add(Reshape(self.input_shape))
+
+        self.encoder = encoder
+        self.decoder = decoder
+    
     def load_encoder(self):
         inputs = Input(shape=self.input_shape, name='encoder_input')
         x = inputs
@@ -79,7 +93,7 @@ class frame_autoencoder(object):
         for filters in self.layer_filters:
             x = Conv2D(filters=filters,
                     kernel_size=self.kernel_size,
-                    strides=2,
+                    strides=1,
                     activation='relu',
                     padding='same')(x)
         
@@ -107,11 +121,11 @@ class frame_autoencoder(object):
         for filters in self.layer_filters[::-1]:
             x = Conv2DTranspose(filters=filters,
                                 kernel_size=self.kernel_size,
-                                strides=2,
+                                strides=1,
                                 activation='relu',
                                 padding='same')(x)
 
-        x = Conv2DTranspose(filters=1,
+        x = Conv2DTranspose(filters=3,
                         kernel_size=self.kernel_size,
                         padding='same')(x)
 
@@ -124,26 +138,103 @@ class frame_autoencoder(object):
         # Instantiate Autoencoder Model
         self.autoencoder = Model(self.inputs, self.decoder(self.encoder(self.inputs)), name='autoencoder')
         self.autoencoder.compile(loss='mse', optimizer='adam')
+
+def plot_history(history):    
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('model loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'test'], loc='upper left')
+    plt.show()
+
+def visualize(img, encoder, decoder):
+    """Draws original, encoded and decoded images"""
+    # img[None] will have shape of (1, 32, 32, 3) which is the same as the model input
+    code = encoder.predict(img[None])[0]
+    reco = decoder.predict(code[None])[0]
+
+    plt.subplot(1,3,1)
+    plt.title("Original")
+    plt.imshow(img)
+
+    plt.subplot(1,3,2)
+    plt.title("Code")
+    plt.imshow(code.reshape([code.shape[-1]//2,-1]))
+
+    plt.subplot(1,3,3)
+    plt.title("Reconstructed")
+    plt.imshow(reco)
+    plt.show()
+
+def run_baseline_autoencoder():
     
+    frame = frame_autoencoder(latent_dim=64)
+    frame.load_and_condition_dataset_v2_data()
+    frame.build_baseline_autoencoder()
+    
+    inp = Input(frame.input_shape)
+    code = frame.encoder(inp)
+    reconstruction = frame.decoder(code)
+
+    autoencoder = Model(inp,reconstruction)
+    autoencoder.compile(optimizer='adamax', loss='mse')
+
+    history = autoencoder.fit(x=frame.y_train, y=frame.y_train, epochs=5, validation_split=0.2)
+    history = autoencoder.fit(x=frame.X_train, y=frame.y_train, epochs=5, validation_split=0.2)
+    
+    return history
+
 
 if __name__ == '__main__':
 
-    frame = frame_autoencoder()
-    frame.load_and_condition_MNIST_data()
-    frame.load_noise_data()
-    frame.load_encoder()
-    frame.load_decoder()
-    frame.load_autoencoder()
+    # frame = frame_autoencoder(latent_dim=64)
+    # frame.load_and_condition_MA_data()
+    # frame.load_encoder()
+    # frame.load_decoder()
+    # frame.load_autoencoder()
 
-    # Added for Tensorboard
+    # # Added for Tensorboard
     # tensorboard = TensorBoard(log_dir='./logs_autoencoder', histogram_freq=2)
-    # frame.autoencoder.fit(frame.X_train_noisy,
+    # frame.autoencoder.fit(frame.X_train,
     #                 frame.X_train,
-    #                 validation_data=(frame.X_test_noisy, frame.X_test),
-    #                 epochs=10,
+    #                 validation_data=(frame.X_test, frame.X_test),
+    #                 epochs=2,
     #                 batch_size=frame.batch_size)
     
+    pass
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    # for i in range(5):
+    #     img = frame.X_test[i]
+    #     visualize(img,frame.encoder,frame.decoder)
+    
     #x_decoded = autoencoder.predict(frame.x_test_noisy)
 
     # rows, cols = 10, 30
@@ -166,3 +257,4 @@ if __name__ == '__main__':
 
 
 
+ 

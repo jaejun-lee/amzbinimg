@@ -90,19 +90,19 @@ def make_noise_images(test = True):
 
 def load_data(x_path, y_path):
 
-    lst_images = listdir(X_IMAGE_PATH)
+    lst_images = listdir(x_path)
     X_images = []
     y_images = []
     image_shape = (128, 128, 3)
     for fn_image in lst_images:
-        x_path = f"{X_IMAGE_PATH}{fn_image}"
-        y_path = f"{Y_IMAGE_PATH}{fn_image}" 
-        if os.path.isfile(x_path) and os.path.isfile(y_path):
-            x_image = imread(x_path)
-            y_image = imread(y_path)
+        x_file_path = f"{x_path}{fn_image}"
+        y_file_path = f"{y_path}{fn_image}" 
+        if os.path.isfile(x_file_path) and os.path.isfile(y_file_path):
+            x_image = imread(x_file_path)
+            y_image = imread(y_file_path)
             if x_image.shape != image_shape or  y_image.shape != image_shape:
-                print(f"{x_path}:{x_image.shape}")
-                print(f"{y_path}:{y_image.shape}")
+                print(f"{x_file_path}:{x_image.shape}")
+                print(f"{y_file_path}:{y_image.shape}")
             else:
                 X_images.append(x_image)
                 y_images.append(y_image)

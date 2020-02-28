@@ -18,6 +18,7 @@ from tensorflow.keras.layers import Activation, Dense, Input, InputLayer
 from tensorflow.keras.layers import Conv2D, Flatten
 from tensorflow.keras.layers import Conv3D, Conv3DTranspose
 from tensorflow.keras.layers import Reshape, Conv2DTranspose
+from tensorflow.keras.layers import BatchNormalization, LeakyReLU
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
 from tensorflow.keras.datasets import mnist
@@ -47,6 +48,10 @@ class frame_autoencoder(object):
         self.kernel_size = kernel_size
         self.latent_dim = latent_dim
         self.layer_filters = layer_filters
+        self.shape = None
+        self.autoencoder = None
+        self.encoder = None
+        self.decoder = None
     
     def load_and_condition_dataset_denoise(self, x_path, y_path):
         '''
@@ -156,7 +161,11 @@ class frame_autoencoder(object):
     def load_autoencoder(self):
         # Instantiate Autoencoder Model
         self.autoencoder = Model(self.inputs, self.decoder(self.encoder(self.inputs)), name='autoencoder')
-        self.autoencoder.compile(loss='mse', optimizer='adam')
+        optimizer = tf.keras.optimizers.Adam(
+                        learning_rate=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, amsgrad=False,
+                        name='Adam'
+                    )
+        self.autoencoder.compile(loss='mse', optimizer=optimizer)
 
 def plot_history(history):    
     plt.plot(history.history['loss'])
@@ -260,6 +269,60 @@ def run_convnet_autoencoder():
     )
 
     return history
+
+    def build_encoder(frame):
+        inputs = Input(shape=frame.input_shape, name='encoder_input')
+        x = inputs
+        # Stack of Conv2D blocks
+        # Notes:
+        # 1) Use Batch Normalization before ReLU on deep networks
+        # 2) Use MaxPooling2D as alternative to strides>1
+        # - faster but not as good as strides>1
+
+        x = Conv2D(filters=32, kernel_size=frame.kernel_size, stride=1, padding='same')(x)
+        x = BatchNormalization()(x)
+        x = LeakyReLU(x)
+        x = Conv2D(filters=64, kernel_size=frame.kernel_size, stride=1, padding='same')(x)
+        x = BatchNormalization()(x)
+        x = LeakyReLU(x)
+        x = Conv2D(filters=64, kernel_size=frame.kernel_size, stride=1, padding='same')(x)
+        x = BatchNormalization()(x)
+        x = LeakyReLU(x)
+
+        # Shape info needed to build Decoder Model
+        frame.shape = K.int_shape(x)
+        # Generate the latent vector
+        x = Flatten()(x)
+        latent = Dense(frame.latent_dim, name='latent_vector')(x)
+
+        # Instantiate Encoder Model
+        frame.encoder = Model(inputs, latent, name='encoder')
+        frame.inputs = inputs
+    
+    def build_decoder(frame):
+    
+        latent_inputs = Input(shape=(frame.latent_dim,), name='decoder_input')
+        x = Dense(frame.shape[1] * frame.shape[2] * frame.shape[3])(latent_inputs)
+        x = Reshape((frame.shape[1], frame.shape[2], frame.shape[3]))(x)
+
+
+        x = Conv2DTranspose(filters=64, kernel_size=frame.kernel_size, strides=1, padding='same')(x)
+        x = BatchNormalization()(x)
+        x = LeakyReLU(x)
+        x = Conv2DTranspose(filters=64, kernel_size=frame.kernel_size, strides=1, padding='same')(x)
+        x = BatchNormalization()(x)
+        x = LeakyReLU(x)
+        x = Conv2DTranspose(filters=32, kernel_size=frame.kernel_size, strides=1, padding='same')(x)
+        x = BatchNormalization()(x)
+        x = LeakyReLU(x)
+
+        x = Conv2DTranspose(filters=3, kernel_size=frame.kernel_size, padding='same')(x)
+
+        outputs = Activation('sigmoid', name='decoder_output')(x)
+
+        # Instantiate Decoder Model
+        frame.decoder = Model(latent_inputs, outputs, name='decoder')
+
 
 if __name__ == '__main__':
     pass

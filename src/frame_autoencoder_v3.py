@@ -270,58 +270,58 @@ def run_convnet_autoencoder():
 
     return history
 
-    def build_encoder(frame):
-        inputs = Input(shape=frame.input_shape, name='encoder_input')
-        x = inputs
-        # Stack of Conv2D blocks
-        # Notes:
-        # 1) Use Batch Normalization before ReLU on deep networks
-        # 2) Use MaxPooling2D as alternative to strides>1
-        # - faster but not as good as strides>1
+def build_encoder(frame):
+    inputs = Input(shape=frame.input_shape, name='encoder_input')
+    x = inputs
+    # Stack of Conv2D blocks
+    # Notes:
+    # 1) Use Batch Normalization before ReLU on deep networks
+    # 2) Use MaxPooling2D as alternative to strides>1
+    # - faster but not as good as strides>1
 
-        x = Conv2D(filters=32, kernel_size=frame.kernel_size, stride=1, padding='same')(x)
-        x = BatchNormalization()(x)
-        x = LeakyReLU(x)
-        x = Conv2D(filters=64, kernel_size=frame.kernel_size, stride=1, padding='same')(x)
-        x = BatchNormalization()(x)
-        x = LeakyReLU(x)
-        x = Conv2D(filters=64, kernel_size=frame.kernel_size, stride=1, padding='same')(x)
-        x = BatchNormalization()(x)
-        x = LeakyReLU(x)
+    x = Conv2D(filters=32, kernel_size=frame.kernel_size, stride=1, padding='same')(x)
+    x = BatchNormalization()(x)
+    x = LeakyReLU(x)
+    x = Conv2D(filters=64, kernel_size=frame.kernel_size, stride=1, padding='same')(x)
+    x = BatchNormalization()(x)
+    x = LeakyReLU(x)
+    x = Conv2D(filters=64, kernel_size=frame.kernel_size, stride=1, padding='same')(x)
+    x = BatchNormalization()(x)
+    x = LeakyReLU(x)
 
-        # Shape info needed to build Decoder Model
-        frame.shape = K.int_shape(x)
-        # Generate the latent vector
-        x = Flatten()(x)
-        latent = Dense(frame.latent_dim, name='latent_vector')(x)
+    # Shape info needed to build Decoder Model
+    frame.shape = K.int_shape(x)
+    # Generate the latent vector
+    x = Flatten()(x)
+    latent = Dense(frame.latent_dim, name='latent_vector')(x)
 
-        # Instantiate Encoder Model
-        frame.encoder = Model(inputs, latent, name='encoder')
-        frame.inputs = inputs
+    # Instantiate Encoder Model
+    frame.encoder = Model(inputs, latent, name='encoder')
+    frame.inputs = inputs
     
-    def build_decoder(frame):
-    
-        latent_inputs = Input(shape=(frame.latent_dim,), name='decoder_input')
-        x = Dense(frame.shape[1] * frame.shape[2] * frame.shape[3])(latent_inputs)
-        x = Reshape((frame.shape[1], frame.shape[2], frame.shape[3]))(x)
+def build_decoder(frame):
+
+    latent_inputs = Input(shape=(frame.latent_dim,), name='decoder_input')
+    x = Dense(frame.shape[1] * frame.shape[2] * frame.shape[3])(latent_inputs)
+    x = Reshape((frame.shape[1], frame.shape[2], frame.shape[3]))(x)
 
 
-        x = Conv2DTranspose(filters=64, kernel_size=frame.kernel_size, strides=1, padding='same')(x)
-        x = BatchNormalization()(x)
-        x = LeakyReLU(x)
-        x = Conv2DTranspose(filters=64, kernel_size=frame.kernel_size, strides=1, padding='same')(x)
-        x = BatchNormalization()(x)
-        x = LeakyReLU(x)
-        x = Conv2DTranspose(filters=32, kernel_size=frame.kernel_size, strides=1, padding='same')(x)
-        x = BatchNormalization()(x)
-        x = LeakyReLU(x)
+    x = Conv2DTranspose(filters=64, kernel_size=frame.kernel_size, strides=1, padding='same')(x)
+    x = BatchNormalization()(x)
+    x = LeakyReLU(x)
+    x = Conv2DTranspose(filters=64, kernel_size=frame.kernel_size, strides=1, padding='same')(x)
+    x = BatchNormalization()(x)
+    x = LeakyReLU(x)
+    x = Conv2DTranspose(filters=32, kernel_size=frame.kernel_size, strides=1, padding='same')(x)
+    x = BatchNormalization()(x)
+    x = LeakyReLU(x)
 
-        x = Conv2DTranspose(filters=3, kernel_size=frame.kernel_size, padding='same')(x)
+    x = Conv2DTranspose(filters=3, kernel_size=frame.kernel_size, padding='same')(x)
 
-        outputs = Activation('sigmoid', name='decoder_output')(x)
+    outputs = Activation('sigmoid', name='decoder_output')(x)
 
-        # Instantiate Decoder Model
-        frame.decoder = Model(latent_inputs, outputs, name='decoder')
+    # Instantiate Decoder Model
+    frame.decoder = Model(latent_inputs, outputs, name='decoder')
 
 
 if __name__ == '__main__':

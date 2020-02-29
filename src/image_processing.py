@@ -53,7 +53,7 @@ class ImageProcessing(object):
         self.missing_labels = self._get_missing_labels()
         pass
 
-    def pre_process_images(self, target_size=(299,299), max_qty=None, empty_bins=False):
+    def pre_process_images(self, target_size=(128,128), max_qty=None, empty_bins=False):
         '''
         Pre-process all images and save data as numpy arrays to disk. This is
         called from the terminal, then the model accesses the saved numpy
@@ -339,7 +339,7 @@ if __name__ == '__main__':
     random.seed(39)
     np.random.seed(39)
     tensorflow.compat.v1.set_random_seed(39)
-    img_proc = ImageProcessing(100000)
+    img_proc = ImageProcessing(19000)
     #img_proc.pre_process_images(target_size=(299,299),
     #                            max_qty=5,    # ignored if empty_bins=True
     #                            empty_bins=False)

@@ -50,20 +50,20 @@ def make_noise_image(tape_image, notape_image):
     '''
     convert image with tapes to mask image with black background.
     '''
-    r = random.randint(120,255)
-    g = random.randint(100,255)
-    b = random.randint(80,255)
-    rgb = [r,g,b]
+    # r = random.randint(120,255)
+    # g = random.randint(100,255)
+    # b = random.randint(80,255)
+    # rgb = [r,g,b]
 
     noise_image = notape_image.copy()
     gray_image = rgb2gray(tape_image)
     mu = np.mean(gray_image)
     sigma = np.std(gray_image)
     #mask = np.logical_and((gray_image >= (mu-sigma/2)), (gray_image <= (mu+sigma/2)))
-    mask = (gray_image >= (mu + sigma/2))
+    mask = (gray_image >= (mu + sigma))
     #mask = (gray_image >= 0.50)
-    #noise_image[mask] = tape_image[mask]
-    noise_image[mask] = rgb
+    noise_image[mask] = tape_image[mask]
+    #noise_image[mask] = rgb
 
     return noise_image
 

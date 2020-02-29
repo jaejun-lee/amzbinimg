@@ -1,11 +1,9 @@
 import importlib as imt 
-import dataset_v0
-imt.reload(dataset_v0)
-
+import datasets_v0
+imt.reload(datasets_v0)
 
 import datetime as dt
 import tensorflow as tf
-
 
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras import Sequential
@@ -16,7 +14,7 @@ from tensorflow.keras.applications import Xception
 from tensorflow.keras.applications.xception import preprocess_input
 from tensorflow.keras.preprocessing.image import img_to_array, load_img
 from tensorflow.keras import Model
-
+import tensorflow.keras.backend as K
 
 import pandas as pd
 import numpy as np
@@ -47,7 +45,7 @@ class framework_xception(object):
     def __init__(self, batch_size=32):
         self.batch_size = batch_size
 
-    def load_datagenerators(self, X_train, y_train, X_test, y_test, input_size = (299, 299)):
+    def load_datagenerators(self, X_train, y_train, X_test, y_test, input_size = (128, 128)):
         '''
         ImageDataGenerator with Pandas Dataframe id:image file path, label:count as string.
         '''
@@ -109,9 +107,6 @@ class framework_xception(object):
             subset = "validation",
             seed=None)
 
-        del X_train
-        del y_train
-        gc.collect()
         self.STEP_SIZE_TRAIN=self.train_generator.n//self.train_generator.batch_size
         self.STEP_SIZE_VALID=self.valid_generator.n//self.valid_generator.batch_size
 
@@ -121,10 +116,6 @@ class framework_xception(object):
             batch_size=self.batch_size,
             shuffle=False,
             seed=None)
-
-        del X_test
-        del y_test
-        gc.collect()
 
         self.STEP_SIZE_TRAIN=self.train_generator.n//self.train_generator.batch_size
         self.STEP_SIZE_VALID=self.valid_generator.n//self.valid_generator.batch_size
@@ -140,9 +131,8 @@ class framework_xception(object):
         # image data (in batches) before training on the image.
         train_generator, valid_generator, test_generator  = self.load_datagenerators()
         
-
         print('\nLoading Xception model ... ...')
-        model = Xception(include_top=False, weights='imagenet',input_shape=(299, 299, 3))
+        model = Xception(include_top=False, weights='imagenet',input_shape=(128, 128, 3))
 
         # Generate bottleneck data. This is obtained by running the model on the
         # training and test data just once, recording the output (last activation
@@ -159,7 +149,6 @@ class framework_xception(object):
             verbose=True)
         np.save('../data/bottleneck_features_train.npy', np.array(bottleneck_features_train))
         print("Train bottleneck feature length = ", len(bottleneck_features_train))
-
 
         bottleneck_features_valid = model.predict(
             generator=valid_generator,
@@ -188,7 +177,6 @@ class framework_xception(object):
         # divide evenly into the shape of the data array. Remove the top few samples
         # from the instance variables to keep them equal.
 
-    
     def load_top_model(self, base_model):
 
         self.top_model = base_model.output
@@ -203,8 +191,6 @@ class framework_xception(object):
         self.base_model = Xception(weights='imagenet',
                           include_top=False,
                           input_shape=input_shape)
-
-
         
     def run_base_model(self):
         pass
@@ -215,12 +201,12 @@ def change_trainable_layers(model, trainable_index):
     for layer in model.layers[trainable_index:]:
         layer.trainable = True
         
-
 def process_img(filename):
     """
-    Loads image from filename, preprocesses it and expands the dimensions because the model predict function expects a batch of images, not one image
+    Loads image from filename, preprocesses it and expands the dimensions 
+    because the model predict function expects a batch of images, not one image
     """
-    original = load_img(filename, target_size = (299,299))
+    original = load_img(filename, target_size = (128,128))
     numpy_image = preprocess_input(img_to_array(original))
     image_batch = np.expand_dims(numpy_image, axis =0)
 
@@ -230,11 +216,17 @@ def print_model_properties(model, indices = 0):
      for i, layer in enumerate(model.layers[indices:]):
         print(f"Layer {i+indices} | Name: {layer.name} | Trainable: {layer.trainable}")
 
-def change_trainable_layers(model, trainable_index):
-    for layer in model.layers[:trainable_index]:
-        layer.trainable = False
-    for layer in model.layers[trainable_index:]:
-        layer.trainable = True
+def plot_history(history):    
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('model loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'test'], loc='upper left')
+    plt.show()
+
+def soft_acc(y_true, y_pred):
+    return K.mean(K.equal(K.round(y_true), K.round(y_pred)))
 
 def main():
 
@@ -244,26 +236,19 @@ if __name__ == '__main__':
 
 
     # get pre-processed image and label data
-    print('\nLoading numpy arrays ... ...')
-    start_time = dt.datetime.now()
-    X_train = np.load('../data/processed_training_images.npy')
-    X_test = np.load('../data/processed_test_images.npy')
-    y_train = np.load('../data/training_labels.npy')
-    y_test = np.load('../data/test_labels.npy')
-    stop_time = dt.datetime.now()
-    print("Loading arrays took ", (stop_time - start_time).total_seconds(), "s.\n")
+    X_train, X_test, y_train, y_test = datasets_v0.load_data()
 
-    frame = framework_baseline(batch_size=32)
+    frame = framework_xception(batch_size=32)
 
-    input_size = (299,299,3)
+    input_size = (128,128,3)
 
     # Prepare Datasets
-    frame.load_datagenerators(X_train, y_train, X_test, y_test, input_size = (299, 299))  
+    frame.load_datagenerators(X_train, y_train, X_test, y_test, input_size = (128, 128))
 
     # load base model
     base_model = Xception(weights='imagenet',
                           include_top=False,
-                          input_shape=(299, 299, 3))
+                          input_shape=(128, 128, 3))
 
     # load top model
     top_model = base_model.output
@@ -281,14 +266,20 @@ if __name__ == '__main__':
 
     # compile the model with a SGD/momentum optimizer
     # and a very slow learning rate.
-    model.compile(loss='mean_squared_error',
-                    optimizer=optimizers.SGD(lr=1e-4, momentum=0.9),
-                    metrics=['accuracy', 'mae'])
 
-    
-    
+    #optimizer = optimizers.SGD(lr=1e-4, momentum=0.9)
+    optimizer = optimizers.Adam(
+    learning_rate=1e-4, beta_1=0.9, beta_2=0.999, epsilon=1e-07, amsgrad=False,
+    name='Adam'
+    )
+
+
+    model.compile(loss='mean_squared_error',
+                    optimizer=optimizer,
+                    metrics=[soft_acc, tf.keras.metrics.RootMeanSquaredError()])
+
     print('\nFitting the model ... ...')
-    log_dir="../logs/fit/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    log_dir="../logs/fit/xception/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
     
     history = model.fit(
@@ -296,7 +287,7 @@ if __name__ == '__main__':
         #y=self.train_df['label'].values,
         #generator = train_generator,
         batch_size=None,
-        epochs=1,
+        epochs=20,
         verbose=1,
         validation_data=frame.valid_generator,
         #shuffle=False,

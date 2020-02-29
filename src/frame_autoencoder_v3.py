@@ -170,18 +170,13 @@ def run_convnet_autoencoder():
 def build_encoder(frame):
     inputs = Input(shape=frame.input_shape, name='encoder_input')
     x = inputs
-    # Stack of Conv2D blocks
-    # Notes:
-    # 1) Use Batch Normalization before ReLU on deep networks
-    # 2) Use MaxPooling2D as alternative to strides>1
-    # - faster but not as good as strides>1
 
     x = Conv2D(filters=16, kernel_size=frame.kernel_size, strides=1, padding='same')(x)
     x = BatchNormalization(trainable=False)(x)
     x = relu(x)
     x = MaxPooling2D(pool_size = (2, 2), padding='same')(x)
 
-    x = Conv2D(filters=8, kernel_size=frame.kernel_size, strides=1, padding='same')(x)
+    x = Conv2D(filters=32, kernel_size=frame.kernel_size, strides=1, padding='same')(x)
     x = BatchNormalization(trainable=False)(x)
     x = relu(x)
     x = MaxPooling2D(pool_size = (2, 2), padding='same')(x)
@@ -288,6 +283,9 @@ def visualize(img, encoder, decoder):
     plt.title("Reconstructed")
     plt.imshow(reco)
     plt.show()
+
+
+
 
 
 if __name__ == '__main__':

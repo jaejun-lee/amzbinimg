@@ -235,7 +235,7 @@ def main():
 if __name__ == '__main__':
 
 
-    # get pre-processed image and label data
+    # load dataset
     X_train, X_test, y_train, y_test = datasets_v0.load_data()
 
     frame = framework_xception(batch_size=32)

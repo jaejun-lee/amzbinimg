@@ -70,7 +70,7 @@ def load_data():
     X = np.stack(X_images).astype(np.uint8)
     y = np.array(y_labels).astype(np.uint8)
     
-    return train_test_split(X, y, test_size=0.2, random_state=42)
+    return train_test_split(X, y, test_size=0.2, random_state=42, shuffle= True)
 
 if __name__ == "__main__":
 

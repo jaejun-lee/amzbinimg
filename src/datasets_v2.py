@@ -109,7 +109,7 @@ def load_data():
     X = np.stack(X_images).astype('uint8')
     y = np.stack(y_images).astype('uint8')
     
-    return train_test_split(X, y, test_size=0.1, random_state=42)
+    return train_test_split(X, y, test_size=0.1, shuffle=True, random_state=42)
 
 def load_test_data(num = 5):
     lst_images = listdir(X_IMAGE_TEST_PATH)

@@ -1,6 +1,8 @@
 import importlib as imt
 import datasets_v3
+import catalog
 imt.reload(datasets_v3)
+imt.reload(catalog)
 
 import datetime as dt
 import tensorflow as tf
@@ -84,31 +86,24 @@ class frame_autoencoder(object):
     def load_autoencoder(self, builder):
         builder(self)
 
-def build_autoencoder(frame):
-    frame.autoencoder = Model(frame.inputs, frame.decoder(frame.encoder(frame.inputs)), name='autoencoder')
-    optimizer = tf.keras.optimizers.Adam(
-                    learning_rate=0.0001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, amsgrad=False,
-                    name='Adam'
-                )
-    frame.autoencoder.compile(loss='mse', optimizer=optimizer)
-
 def run_baseline_autoencoder():
     
     frame = frame_autoencoder(latent_dim=64)
     frame.load_and_condition_dataset_reco()
-    frame.build_baseline_autoencoder()
+    frame.load_encoder(catalog.build_encoder_baseline)
+    frame.load_decoder(catalog.build_decoder_baseline)
     
     inp = Input(frame.input_shape)
     code = frame.encoder(inp)
     reconstruction = frame.decoder(code)
 
-    autoencoder = Model(inp,reconstruction)
-    autoencoder.compile(optimizer='adamax', loss='mse')
+    frame.autoencoder = Model(inp,reconstruction)
+    frame.autoencoder.compile(optimizer='adamax', loss='mse')
 
     log_dir="../logs/autoencoder/train/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=1)
-    history = autoencoder.fit(x=frame.X_train, 
-                            y=frame.y_train, 
+    history = frame.autoencoder.fit(x=frame.Xf_train, 
+                            y=frame.yf_train, 
                             epochs=20, 
                             validation_split=0.2,
                             callbacks = [tensorboard])
@@ -117,8 +112,8 @@ def run_baseline_autoencoder():
     
     log_dir="../logs/autoencoder/evaluate/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=1)    
-    autoencoder.evaluate(x=frame.X_test, 
-                            y=frame.y_test, 
+    frame.autoencoder.evaluate(x=frame.Xf_test, 
+                            y=frame.yf_test, 
                             #batch_size=frame.batch_size, 
                             verbose=1, 
                             callbacks=[tensorboard], 
@@ -136,16 +131,16 @@ def run_convnet_autoencoder():
                             latent_dim = 32, 
                             layer_filters = [16, 32]
     )
-    #frame.load_and_condition_dataset_v3()
-    frame.load_encoder()
-    frame.load_decoder()
-    frame.load_autoencoder()
+    frame.load_and_condition_dataset_reco()
+    frame.load_encoder(catalog.build_encoder_16_32_32_batch_pool)
+    frame.load_decoder(catalog.build_decoder_16_32_32_batch_pool)
+    frame.load_autoencoder(catalog.build_autoencoder)
 
     # Added for Tensorboard
     log_dir="../logs/autoencoder/train/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=1)
-    history = frame.autoencoder.fit(x=frame.X_train,
-                    y=frame.y_train,
+    history = frame.autoencoder.fit(x=frame.Xf_train,
+                    y=frame.yf_train,
                     epochs=20,
                     validation_split=0.2,
                     batch_size=frame.batch_size,
@@ -155,8 +150,8 @@ def run_convnet_autoencoder():
     
     log_dir="../logs/autoencoder/evaluate/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=1)    
-    frame.autoencoder.evaluate(x=frame.X_test, 
-                            y=frame.y_test, 
+    frame.autoencoder.evaluate(x=frame.Xf_test, 
+                            y=frame.yf_test, 
                             batch_size=frame.batch_size, 
                             verbose=1, 
                             callbacks=[tensorboard], 
@@ -166,81 +161,6 @@ def run_convnet_autoencoder():
     )
 
     return history
-
-def build_encoder(frame):
-    inputs = Input(shape=frame.input_shape, name='encoder_input')
-    x = inputs
-
-    x = Conv2D(filters=16, kernel_size=frame.kernel_size, strides=1, padding='same')(x)
-    x = BatchNormalization(trainable=False)(x)
-    x = relu(x)
-    x = MaxPooling2D(pool_size = (2, 2), padding='same')(x)
-
-    x = Conv2D(filters=32, kernel_size=frame.kernel_size, strides=1, padding='same')(x)
-    x = BatchNormalization(trainable=False)(x)
-    x = relu(x)
-    x = MaxPooling2D(pool_size = (2, 2), padding='same')(x)
-
-    x = Conv2D(filters=32, kernel_size=frame.kernel_size, strides=1, padding='same')(x)
-    x = BatchNormalization(trainable=False)(x)
-    x = relu(x)
-    x = MaxPooling2D(pool_size = (2, 2), padding='same')(x)
-
-    
-    # Shape info needed to build Decoder Model
-    frame.shape = K.int_shape(x)
-    # Generate the latent vector
-    x = Flatten()(x)
-    latent = Dense(frame.latent_dim, name='latent_vector')(x)
-
-    # Instantiate Encoder Model
-    frame.encoder = Model(inputs, latent, name='encoder')
-    frame.inputs = inputs
-    
-def build_decoder(frame):
-
-    latent_inputs = Input(shape=(frame.latent_dim,), name='decoder_input')
-    x = Dense(frame.shape[1] * frame.shape[2] * frame.shape[3])(latent_inputs)
-    x = Reshape((frame.shape[1], frame.shape[2], frame.shape[3]))(x)
-
-
-    x = Conv2DTranspose(filters=32, kernel_size=frame.kernel_size, strides=1, padding='same')(x)
-    x = BatchNormalization(trainable=False)(x)
-    x = relu(x)
-    x = UpSampling2D((2, 2))(x)
-
-    x = Conv2DTranspose(filters=32, kernel_size=frame.kernel_size, strides=1, padding='same')(x)
-    x = BatchNormalization(trainable=False)(x)
-    x = relu(x)
-    x = UpSampling2D((2, 2))(x)
-
-    x = Conv2DTranspose(filters=16, kernel_size=frame.kernel_size, strides=1, padding='same')(x)
-    x = BatchNormalization(trainable=False)(x)
-    x = relu(x)
-    x = UpSampling2D((2, 2))(x)
-
-    x = Conv2DTranspose(filters=3, kernel_size=frame.kernel_size, padding='same')(x)
-
-    outputs = Activation('sigmoid', name='decoder_output')(x)
-
-    # Instantiate Decoder Model
-    frame.decoder = Model(latent_inputs, outputs, name='decoder')
-
-def build_baseline_encoder(frame):
-    # The encoder
-    encoder = Sequential()
-    encoder.add(InputLayer(frame.input_shape))
-    encoder.add(Flatten())
-    encoder.add(Dense(frame.latent_dim))
-    frame.encoder = encoder
-
-def build_baseline_encoder(frame):
-    # The decoder
-    decoder = Sequential()
-    decoder.add(InputLayer((frame.latent_dim)))
-    decoder.add(Dense(np.prod(frame.input_shape)))
-    decoder.add(Reshape(frame.input_shape))
-    frame.decoder = decoder
 
 def plot_history(history):    
     plt.plot(history.history['loss'])
@@ -285,7 +205,27 @@ def visualize(img, encoder, decoder):
     plt.show()
 
 
-
+def visualize_features(img, encoder, decoder):
+    code = encoder.predict(img[None])[0]
+    
+    images_per_row = 16
+    num_of_features = code.shape[0]
+    n_cols =  num_of_features // images_per_row
+    display_grid = np.zeros(images_per_row, n_cols)
+    
+    for row in range(images_per_row):
+        for col in range(n_cols):
+            mask = np.zeros(num_of_features)
+            mask[row * n_cols + cos] = 1
+            new_code = code.copy()
+            new_code = new_code * mask
+            reco = decoder.predict(new_code[None])[0]
+            display_grid[row, col] = reco
+    
+    plt.figure(figsize= (images_per_row, n_cols))
+    plt.title("Feature Representation by Decoder")
+    plt.grid(False)
+    plt.imshow(display_grid, aspect='auto', cmap='viridis')
 
 
 if __name__ == '__main__':

@@ -67,8 +67,8 @@ def load_data():
             X_images.append(x_image)
             y_labels.append(quantity)
     
-    X = np.stack(X_images).astype('uint8')
-    y = np.array(y_labels)
+    X = np.stack(X_images).astype(np.uint8)
+    y = np.array(y_labels).astype(np.uint8)
     
     return train_test_split(X, y, test_size=0.2, random_state=42)
 

@@ -1,14 +1,9 @@
 import importlib as imt
 import datasets_v3
-<<<<<<< HEAD
 import datasets_v0
 import catalog
 imt.reload(datasets_v3)
 imt.reload(datasets_v0)
-=======
-import catalog
-imt.reload(datasets_v3)
->>>>>>> 5f7a43753f7bf414ef6814a0cdbe00a0cae55bbe
 imt.reload(catalog)
 
 import datetime as dt
@@ -106,7 +101,6 @@ class frame_autoencoder(object):
     def load_model_predict(self, builder):
         builder(self)
 
-<<<<<<< HEAD
 
     def load_datagenerators(self, X_train, y_train, X_test, y_test, input_size = (128, 128)):
         '''
@@ -184,8 +178,6 @@ class frame_autoencoder(object):
         self.STEP_SIZE_VALID=self.valid_generator.n//self.valid_generator.batch_size
         self.STEP_SIZE_TEST=self.test_generator.n//self.test_generator.batch_size
 
-=======
->>>>>>> 5f7a43753f7bf414ef6814a0cdbe00a0cae55bbe
 def run_baseline_autoencoder():
     
     frame = frame_autoencoder(latent_dim=64)
@@ -197,21 +189,12 @@ def run_baseline_autoencoder():
     code = frame.encoder(inp)
     reconstruction = frame.decoder(code)
 
-<<<<<<< HEAD
     frame.model_autoencoder = Model(inp,reconstruction)
     frame.model_autoencoder.compile(optimizer='adamax', loss='mse')
 
     log_dir="../logs/autoencoder/train/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=1)
     history = frame.model_autoencoder.fit(x=frame.Xf_train, 
-=======
-    frame.autoencoder = Model(inp,reconstruction)
-    frame.autoencoder.compile(optimizer='adamax', loss='mse')
-
-    log_dir="../logs/autoencoder/train/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
-    tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=1)
-    history = frame.autoencoder.fit(x=frame.Xf_train, 
->>>>>>> 5f7a43753f7bf414ef6814a0cdbe00a0cae55bbe
                             y=frame.yf_train, 
                             epochs=20, 
                             validation_split=0.2,
@@ -221,11 +204,7 @@ def run_baseline_autoencoder():
     
     log_dir="../logs/autoencoder/evaluate/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=1)    
-<<<<<<< HEAD
     frame.model_autoencoder.evaluate(x=frame.Xf_test, 
-=======
-    frame.autoencoder.evaluate(x=frame.Xf_test, 
->>>>>>> 5f7a43753f7bf414ef6814a0cdbe00a0cae55bbe
                             y=frame.yf_test, 
                             #batch_size=frame.batch_size, 
                             verbose=1, 
@@ -245,24 +224,14 @@ def run_convnet_autoencoder():
                             layer_filters = [16, 32]
     )
     frame.load_and_condition_dataset_reco()
-<<<<<<< HEAD
     frame.load_encoder(catalog.build_encoder_cnn_16_32_32_norm_pool)
     frame.load_decoder(catalog.build_decoder_cnn_16_32_32_norm_pool)
     frame.load_model_autoencoder(catalog.build_autoencoder)
-=======
-    frame.load_encoder(catalog.build_encoder_16_32_32_batch_pool)
-    frame.load_decoder(catalog.build_decoder_16_32_32_batch_pool)
-    frame.load_autoencoder(catalog.build_autoencoder)
->>>>>>> 5f7a43753f7bf414ef6814a0cdbe00a0cae55bbe
 
     # Added for Tensorboard
     log_dir="../logs/autoencoder/train/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=1)
-<<<<<<< HEAD
     history = frame.model_autoencoder.fit(x=frame.Xf_train,
-=======
-    history = frame.autoencoder.fit(x=frame.Xf_train,
->>>>>>> 5f7a43753f7bf414ef6814a0cdbe00a0cae55bbe
                     y=frame.yf_train,
                     epochs=20,
                     validation_split=0.2,
@@ -273,11 +242,7 @@ def run_convnet_autoencoder():
     
     log_dir="../logs/autoencoder/evaluate/" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=1)    
-<<<<<<< HEAD
     frame.model_autoencoder.evaluate(x=frame.Xf_test, 
-=======
-    frame.autoencoder.evaluate(x=frame.Xf_test, 
->>>>>>> 5f7a43753f7bf414ef6814a0cdbe00a0cae55bbe
                             y=frame.yf_test, 
                             batch_size=frame.batch_size, 
                             verbose=1, 
@@ -289,7 +254,6 @@ def run_convnet_autoencoder():
 
     return history
 
-<<<<<<< HEAD
 
 def run_prediction_model():
     # load dataset
@@ -359,8 +323,6 @@ def run_prediction_model():
 
     return history, pred
 
-=======
->>>>>>> 5f7a43753f7bf414ef6814a0cdbe00a0cae55bbe
 def plot_history(history):    
     plt.plot(history.history['loss'])
     plt.plot(history.history['val_loss'])
@@ -425,7 +387,6 @@ def visualize_features(img, encoder, decoder):
     plt.title("Feature Representation by Decoder")
     plt.grid(False)
     plt.imshow(display_grid, aspect='auto', cmap='viridis')
-<<<<<<< HEAD
 
 def change_trainable_layers(model, trainable_index):
     for layer in model.layers[:trainable_index]:
@@ -436,8 +397,6 @@ def change_trainable_layers(model, trainable_index):
 def print_model_properties(model, indices = 0):
      for i, layer in enumerate(model.layers[indices:]):
         print(f"Layer {i+indices} | Name: {layer.name} | Trainable: {layer.trainable}")
-=======
->>>>>>> 5f7a43753f7bf414ef6814a0cdbe00a0cae55bbe
 
 
 if __name__ == '__main__':

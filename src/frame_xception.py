@@ -26,9 +26,7 @@ import gc
 
 class framework_xception(object):
     '''
-    This class provides functions to train baseline model based on the 
-    previous cohort project from https://github.com/dandresky/inventory-classifier
-    .
+    This class provides functions to train baseline model.
 
     Functions:
 
@@ -40,14 +38,25 @@ class framework_xception(object):
             feed-forward each sample image once through pretrained model to
             record and save convolution layer output
         run_base_model()
+
+    TODO:
+        1. move loading datasets logic to datasets_v3 module
+        2. move plot functions to utils module
+        3. move custom loss function to utils module
+        4. adapt to use model catalog 
+
     '''
 
     def __init__(self, batch_size=32):
         self.batch_size = batch_size
 
     def load_datagenerators(self, X_train, y_train, X_test, y_test, input_size = (128, 128)):
-        '''
-        ImageDataGenerator with Pandas Dataframe id:image file path, label:count as string.
+        '''set datagen and flow
+
+        NOTE:
+            1. first, attempted to use flow from dataframe, but it's raw option does not work
+            with integer label correctly.
+
         '''
         train_datagen = ImageDataGenerator(featurewise_center=False, # default
             samplewise_center=False,                    # default
@@ -120,62 +129,6 @@ class framework_xception(object):
         self.STEP_SIZE_TRAIN=self.train_generator.n//self.train_generator.batch_size
         self.STEP_SIZE_VALID=self.valid_generator.n//self.valid_generator.batch_size
         self.STEP_SIZE_TEST=self.test_generator.n//self.test_generator.batch_size
-        
-    def save_bottlebeck_features(self):
-
-        print('\nComputing train and test bottleneck features ... ...')
-        print('\nCreating data generators ... ...')
-        print("X_train length = ", self.train_df.size)
-        print("X_test length = ", self.test_df.size)
-        # data generators are instructions to Keras for further processing of the
-        # image data (in batches) before training on the image.
-        train_generator, valid_generator, test_generator  = self.load_datagenerators()
-        
-        print('\nLoading Xception model ... ...')
-        model = Xception(include_top=False, weights='imagenet',input_shape=(128, 128, 3))
-
-        # Generate bottleneck data. This is obtained by running the model on the
-        # training and test data just once, recording the output (last activation
-        # maps before the fully-connected layers) into separate numpy arrays.
-        # This data will be used to train and validate a fully-connected model on
-        # top of the stored features for computational efficiency.
-        print('\nRunning train predictor and saving features ... ...')
-        bottleneck_features_train = model.predict(
-            generator=train_generator,
-            steps=self.STEP_SIZE_TRAIN,
-            max_queue_size=self.batch_size*8,
-            #workers=8,
-            #use_multiprocessing=False,
-            verbose=True)
-        np.save('../data/bottleneck_features_train.npy', np.array(bottleneck_features_train))
-        print("Train bottleneck feature length = ", len(bottleneck_features_train))
-
-        bottleneck_features_valid = model.predict(
-            generator=valid_generator,
-            steps=self.STEP_SIZE_VALID,
-            max_queue_size=self.batch_size*8,
-            #workers=8,
-            #use_multiprocessing=False,
-            verbose=True)
-        np.save('../data/bottleneck_features_valid.npy', np.array(bottleneck_features_valid))
-        print("Validation bottleneck feature length = ", len(bottleneck_features_train))
-
-        print('\nRunning test predictor and saving features ... ...')
-        bottleneck_features_test = model.predict(
-            generator=test_generator,
-            steps=self.STEP_SIZE_TEST,
-            max_queue_size=self.batch_size*8,
-            #workers=8,
-            #use_multiprocessing=False,
-            verbose=True)
-        np.save('../data/bottleneck_features_test.npy',
-                np.array(bottleneck_features_test))
-        print("Test bottleneck feature length = ", len(bottleneck_features_test))
-
-        # steps_per_epoch=X_train.shape[0] // batch_size in the code above can
-        # result in discarding the last few data samples if batch_size doesn't
-        # divide evenly into the shape of the data array. Remove the top few samples
-        # from the instance variables to keep them equal.
 
     def load_top_model(self, base_model):
 
@@ -200,17 +153,6 @@ def change_trainable_layers(model, trainable_index):
         layer.trainable = False
     for layer in model.layers[trainable_index:]:
         layer.trainable = True
-        
-def process_img(filename):
-    """
-    Loads image from filename, preprocesses it and expands the dimensions 
-    because the model predict function expects a batch of images, not one image
-    """
-    original = load_img(filename, target_size = (128,128))
-    numpy_image = preprocess_input(img_to_array(original))
-    image_batch = np.expand_dims(numpy_image, axis =0)
-
-    return image_batch
 
 def print_model_properties(model, indices = 0):
      for i, layer in enumerate(model.layers[indices:]):
@@ -226,15 +168,17 @@ def plot_history(history):
     plt.show()
 
 def soft_acc(y_true, y_pred):
+    '''caculate accuracy for RMSE loss function prediction.
+    '''
     return K.mean(K.equal(K.round(y_true), K.round(y_pred)))
 
 def main():
 
     pass
 
-if __name__ == '__main__':
-
-
+def run_prediction():
+    '''Procedure to run prediction model in jupyter notebook.
+    '''
     # load dataset
     X_train, X_test, y_train, y_test = datasets_v0.load_data()
 
@@ -272,7 +216,6 @@ if __name__ == '__main__':
     learning_rate=1e-4, beta_1=0.9, beta_2=0.999, epsilon=1e-07, amsgrad=False,
     name='Adam'
     )
-
 
     model.compile(loss='mean_squared_error',
                     optimizer=optimizer,
@@ -325,11 +268,10 @@ if __name__ == '__main__':
             #workers=8,
             use_multiprocessing=False,
             verbose=True)
+
+
+if __name__ == '__main__':
+    pass
+
     
-    '''
-    display_grid = np.zeros((7*2048//16, 16*7))
-    for col in range(2048//16):
-        for row in range(16): 
-            channel_image = X_train[0, :, :, col * 16 + row]
-            display_grid[col * 7: (col + 1) * 7, row * 7 : (row + 1) * 7] = channel_image
-    '''        
+    

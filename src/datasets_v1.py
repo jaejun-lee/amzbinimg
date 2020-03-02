@@ -10,6 +10,14 @@ import numpy as np
 
 from sklearn.model_selection import train_test_split
 
+'''
+Defunct.
+
+TODO: 
+    1. remove files after checking no broken referece.
+'''
+
+
 ORIGINAL_IMAGE_PATH = "../data/clean-images/"
 X_IMAGE_PATH = "../data/x_images_v1/"
 Y_IMAGE_PATH = "../data/y_images_v1/"

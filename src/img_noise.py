@@ -8,6 +8,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import random
 
+
+'''utility functions to be used in prepare_noise_dataset.ipynb
+
+'''
 ORIGINAL_IMAGE_PATH = "../data/clean-images/"
 NOISE_IMAGE_PATH = "../data/noise-images/"
 NOISE_MASK_PATH = "../data/mask-images/"

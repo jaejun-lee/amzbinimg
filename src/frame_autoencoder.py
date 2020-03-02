@@ -36,11 +36,18 @@ from tensorflow.keras.preprocessing.image import img_to_array, load_img
 
 from tensorflow.keras.callbacks import TensorBoard
 
+'''
 
+TODO: 
+    1. move util functions to utils modeul
+'''
 
 np.random.seed(43) # get consistent results from a stochastic training process
 
 class frame_autoencoder(object):
+    '''parameter and hyper-parameter placeholder class for autoencoder
+
+    '''
 
     def __init__(self, batch_size = 128, kernel_size = 3, latent_dim = 128, layer_filters = [16, 32]):
         self.batch_size = batch_size
@@ -177,6 +184,9 @@ class frame_autoencoder(object):
         self.STEP_SIZE_TEST=self.test_generator.n//self.test_generator.batch_size
 
 def run_baseline_autoencoder():
+    '''Procedure to run baseline autoencoder in jupyter notebook
+
+    '''
     
     frame = frame_autoencoder(latent_dim=64)
     frame.load_and_condition_dataset_reco()
@@ -215,6 +225,9 @@ def run_baseline_autoencoder():
     return history
 
 def run_convnet_autoencoder():
+    '''Procedure to run cnn in jupyter notebook.
+
+    '''
 
     frame = frame_autoencoder(batch_size = 64, 
                             kernel_size = 3, 
@@ -254,6 +267,10 @@ def run_convnet_autoencoder():
 
 
 def run_prediction_model():
+    '''Procedure to run prediction model by frame_autoencoder class
+
+    '''
+
     # load dataset
     X_train, X_test, y_train, y_test = datasets_v0.load_data()
 
@@ -400,61 +417,4 @@ def print_model_properties(model, indices = 0):
 if __name__ == '__main__':
 
 
-    
-
     pass
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # for i in range(5):
-    #     img = frame.X_test[i]
-    #     visualize(img,frame.encoder,frame.decoder)
-    
-    #x_decoded = autoencoder.predict(frame.x_test_noisy)
-
-    # rows, cols = 10, 30
-    # num = rows * cols
-    # imgs = np.concatenate([frame.x_test[:num], frame.x_test_noisy[:num], x_decoded[:num]])
-    # imgs = imgs.reshape((rows * 3, cols, frame.image_size, frame.image_size))
-    # imgs = np.vstack(np.split(imgs, rows, axis=1))
-    # imgs = imgs.reshape((rows * 3, -1, frame.image_size, frame.image_size))
-    # imgs = np.vstack([np.hstack(i) for i in imgs])
-    # imgs = (imgs * 255).astype(np.uint8)
-
-    # plt.figure(figsize=(12,12))
-    # plt.axis('off')
-    # plt.title('Original images: top rows, '
-    #         'Corrupted Input: middle rows, '
-    #         'Denoised Input:  third rows', fontsize=14)
-    # plt.imshow(imgs, interpolation='none', cmap='gray')
-    # plt.show()
-
-
-
-
- 

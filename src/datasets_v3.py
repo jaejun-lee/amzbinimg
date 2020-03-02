@@ -11,9 +11,7 @@ from skimage.color import rgb2gray
 from skimage.transform import resize
 from sklearn.model_selection import train_test_split
 
-#TAPE_IMAGE_PATH = "../data/x_images/"
-TAPE_IMAGE_PATH = "../data/tape_images_v2/"
-#TAPE_IMAGE_PATH = "../data/tape_images_v3/"
+TAPE_IMAGE_PATH = "../data/tape_images_v3/"
 NOTAPE_IMAGE_PATH = "../data/y_images_v3/"
 
 X_IMAGE_PATH = "../data/x_images_v3/"
@@ -27,6 +25,9 @@ def save_image(file_name, path, image):
     imsave( f"{path}{file_name}", image )
 
 def plot_image_and_histogram(img):
+    '''plot histogram for gray or color image
+    
+    '''
     fig = plt.figure(figsize=(8,4))
     ax1 = fig.add_subplot(121)
     if len(img.shape) == 2:
@@ -47,9 +48,10 @@ def plot_image_and_histogram(img):
     plt.tight_layout(pad=1)
 
 def make_noise_image(tape_image, notape_image):
+    '''add tape noise to the image
+
     '''
-    convert image with tapes to mask image with black background.
-    '''
+
     # r = random.randint(120,255)
     # g = random.randint(100,255)
     # b = random.randint(80,255)
@@ -59,17 +61,15 @@ def make_noise_image(tape_image, notape_image):
     gray_image = rgb2gray(tape_image)
     mu = np.mean(gray_image)
     sigma = np.std(gray_image)
-    #mask = np.logical_and((gray_image >= (mu-sigma/2)), (gray_image <= (mu+sigma/2)))
     mask = (gray_image >= (mu + sigma))
-    #mask = (gray_image >= 0.50)
     noise_image[mask] = tape_image[mask]
-    #noise_image[mask] = rgb
 
     return noise_image
 
 def make_noise_images(test = True):
     '''
-    for all no_tape_images, mask it with random selected image from tap_image
+    
+    for all no_tape_images, mask it with randomly selected image from tape_images
     '''
     dir_tapes = listdir(TAPE_IMAGE_PATH)
     dir_notapes = listdir(NOTAPE_IMAGE_PATH)
@@ -89,6 +89,9 @@ def make_noise_images(test = True):
 
 
 def load_data(x_path, y_path):
+    '''prepare train and test dataset for auto-encoder
+
+    '''
 
     lst_images = listdir(x_path)
     X_images = []
@@ -113,9 +116,10 @@ def load_data(x_path, y_path):
     return train_test_split(X, y, shuffle=True, test_size=0.1, random_state=42)
 
 
-def prepare_y_images_v3():
-    FROM_PATH = '../data/test/images/ALL/'
-    TO_PATH = '../data/y_images_v3/'
+def prepare_y_images_v3(FROM_PATH, TO_PATH):
+    '''resize grocery no tape images to TO_PATH: y_images path
+
+    '''
     lst_images = listdir(FROM_PATH)
     for fn_image in lst_images:
         from_file_path = f"{FROM_PATH}{fn_image}"
@@ -131,9 +135,5 @@ def resize_image(from_path, to_path, image_shape):
 
 
 if __name__ == '__main__':
-
-    #make_noise_images()
     pass
-
-#resize_image('../data/bin-images/00009.jpg', '../data/x_images/00004.jpg', (128,128,3))
 

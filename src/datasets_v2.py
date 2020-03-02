@@ -11,6 +11,13 @@ from skimage.color import rgb2gray
 from skimage.transform import resize
 from sklearn.model_selection import train_test_split
 
+'''
+This script was used to prepare and load denoise dataset version 1.
+
+TODO:
+    1. intergrate to datasets_v3
+'''
+
 TAPE_IMAGE_PATH = "../data/tape_images_v2/"
 NOTAPE_IMAGE_PATH = "../data/notape_images_v2/"
 X_IMAGE_PATH = "../data/x_images_v2/"

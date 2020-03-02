@@ -15,6 +15,12 @@ import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
 
+'''
+It is used to prepare and load dataset for prediction model.
+
+'''
+
+
 img_dir= "../data/bin-images/"
 meta_dir = "../data/metadata/"
 X_IMAGE_PATH = "../data/x_images/"

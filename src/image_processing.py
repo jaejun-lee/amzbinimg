@@ -20,7 +20,8 @@ SMALL_IMAGE_DATA_PATH = '../data/x_images/'
 
 
 class ImageProcessing(object):
-    '''
+    '''Adapted from github.com/dandresky/inventory-classifier
+
     The ImageProcessing class provides an object that analyses the bin-image
     data folders to get a sorted list of image and metadata file names. Metadata
     files are examined to extract bin quantity labels and screen out files with
@@ -51,101 +52,7 @@ class ImageProcessing(object):
         # layer structure of the neural network
         self.unique_labels = self._get_unique_labels()
         self.missing_labels = self._get_missing_labels()
-        pass
 
-    def pre_process_images(self, target_size=(128,128), max_qty=None, empty_bins=False):
-        '''
-        Pre-process all images and save data as numpy arrays to disk. This is
-        called from the terminal, then the model accesses the saved numpy
-        arrays for training and test.
-
-        The first step is to screen the data set for desired items. The MVP
-        focuses first on categorizing if a bin has items or not by selecting
-        all files with 0 items, then randomly selecting an equal
-        nuumber of images from the rest.
-
-        The MVP+ will attempt to count items in a bin and allow to select a
-        max item quantity, discarding all other images.
-
-        Inputs:
-            target_size: tuple of the x and y dimensions
-            empty_bins: if True, selects all 0 qty bin images and equal number
-                        of others
-            max_qty: selects everything less than or equal to max_qty, ignored
-                     if empty_bins=True
-
-        Outputs:
-            npy files written to ../../dsi-capstone-data/
-            -   processed_training_images.npy
-            -   processed_test_images.npy
-            -   training_labels.npy
-            -   test_labels.npy
-        '''
-        # filter out the image files, json files, and labels that exceed the
-        # maximum quantity. This is to strip out the the outliers (bin
-        # quanities that are too large to detect)
-        self._screen_data_by_qty(max_qty, empty_bins)
-
-        # create the train test split
-        train_img, test_img, train_lbl, test_lbl = \
-            train_test_split(self.image_files,
-                             self.labels,
-                             test_size=0.20,
-                             random_state=39)
-
-        # manually inspect small data set to ensure labels
-        # print(train_img)
-        # print(train_lbl)
-        # print(test_img)
-        # print(test_lbl)
-
-        # create the processed training image array. Pixel values saved are
-        # uint8 to save space. Normalization needs to be done in the model.
-        print('\nPre-processing training images ... ...')
-        depth = 3
-        arr = np.zeros((len(train_img), target_size[0], target_size[1], depth), dtype=np.uint8)
-        for idx, img in enumerate(train_img):
-            with open(IMAGE_DATA_PATH + img, 'r+b') as f:
-                with Image.open(f) as image:
-                    resized_image = resizeimage.resize_contain(image, target_size)
-                    resized_image = resized_image.convert("RGB")
-                    #resized_image.save(IMAGE_DATA_PATH + 'resized-' + self.X_train[self.batch_index], image.format)
-                    X = img_to_array(resized_image).astype(np.uint8)
-                    arr[idx] = X
-            if (idx + 1) % 1000 == 0:
-                print(idx+1, "out of", len(train_img), "training images have been processed")
-
-        print('\nSaving the processed training images array ... ...')
-        print("Size of numpy array = ", sys.getsizeof(arr))
-        np.save('../data/processed_training_images.npy', arr)
-
-        # create the processed test image array. Pixel values saved are
-        # uint8 to save space. Normalization needs to be done in the model?
-        print('\nPre-processing test images ... ...')
-        depth = 3
-        arr = np.zeros((len(test_img), target_size[0], target_size[1], depth), dtype=np.uint8)
-        for idx, img in enumerate(test_img):
-            with open(IMAGE_DATA_PATH + img, 'r+b') as f:
-                with Image.open(f) as image:
-                    resized_image = resizeimage.resize_contain(image, target_size)
-                    resized_image = resized_image.convert("RGB")
-                    #resized_image.save(IMAGE_DATA_PATH + 'resized-' + self.X_train[self.batch_index], image.format)
-                    X = img_to_array(resized_image).astype(np.uint8)
-                    arr[idx] = X
-            if (idx + 1) % 1000 == 0:
-                print(idx+1, "out of", len(test_img), "test images have been processed")
-
-        print('\nSaving the processed test images array ... ...')
-        print("Size of numpy array = ", sys.getsizeof(arr))
-        np.save('../data/processed_test_images.npy', arr)
-
-        print('\nSaving the train/test label arrays ... ...')
-        print("Size of training labels numpy array = ", sys.getsizeof(train_lbl))
-        np.save('../data/training_labels.npy', train_lbl)
-        print("Size of test labels numpy array = ", sys.getsizeof(test_lbl))
-        np.save('../data/test_labels.npy', test_lbl)
-
-        pass
 
     def resize_to_small_images(self, target_size=(299,299), max_qty=None, empty_bins=False):
         '''        
@@ -322,28 +229,13 @@ class ImageProcessing(object):
 
         pass
 
-
-def main():
-    random.seed(39)
-    np.random.seed(39)
-    tensorflow.compat.v1.set_random_seed(39)
-    img_proc = ImageProcessing(3000)
-    img_proc.pre_process_images(target_size=(299,299),
-                                max_qty=5,    # ignored if empty_bins=True
-                                empty_bins=False)
-
-
 if __name__ == '__main__':
-    #main()
 
-    random.seed(39)
-    np.random.seed(39)
-    tensorflow.compat.v1.set_random_seed(39)
-    img_proc = ImageProcessing(19000)
-    #img_proc.pre_process_images(target_size=(299,299),
-    #                            max_qty=5,    # ignored if empty_bins=True
-    #                            empty_bins=False)
+    # random.seed(39)
+    # np.random.seed(39)
+    # tensorflow.compat.v1.set_random_seed(39)
+    # img_proc = ImageProcessing(19000)
 
-    img_proc.resize_to_small_images(target_size=(128,128),
-                                max_qty=5,    # ignored if empty_bins=True
-                                empty_bins=False)
+    # img_proc.resize_to_small_images(target_size=(128,128),
+    #                             max_qty=5,    # ignored if empty_bins=True
+    #                             empty_bins=False)

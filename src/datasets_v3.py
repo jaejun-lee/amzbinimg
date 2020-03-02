@@ -110,7 +110,7 @@ def load_data(x_path, y_path):
     X = np.stack(X_images).astype('uint8')
     y = np.stack(y_images).astype('uint8')
     
-    return train_test_split(X, y, test_size=0.1, random_state=42)
+    return train_test_split(X, y, shuffle=True, test_size=0.1, random_state=42)
 
 
 def prepare_y_images_v3():

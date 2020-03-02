@@ -2,13 +2,20 @@ import boto3
 import os
 import timeit
 
-
 BUCKET_NAME = 'aft-vbi-pds'
 LIST_FILE = '../data/list_s3_objects.txt'
 BIN_IMAGE_DIR = '../data/bin-images/'
 METADATA_DIR = '../data/metadata/'
 
 def download_objects(start=0, end=10):
+    '''retrieve Amazon Bin Images Dataset
+
+    Parameters:
+        start: int
+        end: int
+
+    TODO: add script to populate list_s3_objects.txt
+    '''
     s3 = boto3.client('s3')
 
     with open(LIST_FILE, 'r') as fp:

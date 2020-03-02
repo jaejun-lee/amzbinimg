@@ -82,14 +82,12 @@ class frame_autoencoder(object):
         y_train = y_train.astype('float32') / 255
         y_test = y_test.astype('float32') / 255
 
-        self.image_size = X_train.shape[1]
-        self.input_shape = (self.image_size, self.image_size, 3)
-        self.Xf_train = X_train
-        self.Xf_test = X_test
-        self.yf_train = y_train
-        self.yf_test = y_test
-    
-    def load_encoder(self, builder):
+        self.image_size = X_train.shape[1]pred = frame.model_predict.predict(x=frame.test_generator,
+            steps=frame.STEP_SIZE_TEST,
+            max_queue_size=frame.batch_size*8,
+            #workers=8,
+            use_multiprocessing=False,
+            verbose=True)
         builder(self)
     
     def load_decoder(self, builder):

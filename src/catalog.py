@@ -1,3 +1,6 @@
+from utils import soft_rmse
+from utils import soft_acc
+
 import tensorflow as tf
 
 import numpy as np
@@ -36,13 +39,9 @@ TODO:
 
 '''
 
-def soft_rmse(y_true, y_pred):
-    '''caculate RMSE for categorical predictions. 
-
-    '''
-    return K.sqrt(  K.mean(K.cast_to_floatx ( K.square( K.argmax(y_true) - K.argmax(y_pred) )), axis=-1) )
-
-
+###############################################################################
+# Autoencoder cnn_16_32_32
+###############################################################################
 def build_encoder_cnn_16_32_32_norm_pool(frame):
     
     inputs = Input(shape=frame.input_shape, name='encoder_input')
@@ -98,6 +97,11 @@ def build_decoder_cnn_16_32_32_norm_pool(frame):
 
     frame.decoder = Model(latent_inputs, outputs, name='decoder')
 
+
+###############################################################################
+# Autoencoder Baseline
+###############################################################################
+
 def build_encoder_baseline(frame):
 
     encoder = Sequential()
@@ -121,6 +125,10 @@ def build_autoencoder(frame):
                     name='Adam'
                 )
     frame.model_autoencoder.compile(loss='mse', optimizer=optimizer)
+
+###############################################################################
+# Autoencoder CNN Baseline
+###############################################################################
 
 def build_encoder_cnn_baseline(frame):
 
@@ -161,6 +169,10 @@ def build_decoder_cnn_baseline(frame):
 
         frame.decoder = Model(latent_inputs, outputs, name='decoder')
 
+
+###############################################################################
+# Prediction Model
+###############################################################################
 def build_decoder_predict(frame):
 
     latent_inputs = Input(shape=(frame.latent_dim,), name='decoder_input')
@@ -183,6 +195,9 @@ def build_model_predict(frame):
                     metrics=['accuracy', soft_rmse])
 
 
+###############################################################################
+# Autoencoder CNN 16 32 64
+###############################################################################
 def build_encoder_cnn_16_32_64_512(frame):
     '''
     scored 0.24 RMSE with descent loss history for reconstruction autoencoder
@@ -241,21 +256,9 @@ def build_encoder_cnn_16_32_64_512(frame):
     frame.decoder = Model(latent_inputs, outputs, name='decoder')
 
 
-def build_autoencoder_binary_crossentropy(frame):
-    '''use binary crossentropy for loss function.
-
-    '''
-    frame.autoencoder = Model(frame.inputs, frame.decoder(frame.encoder(frame.inputs)), name='autoencoder')
-    optimizer = tf.keras.optimizers.Adam(
-                    learning_rate=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, amsgrad=False,
-                    name='Adam'
-                )
-    frame.autoencoder.compile(loss='binary_crossentropy', optimizer=optimizer)
-
-
-
-
-
+###############################################################################
+# Autoencoder CNN 16 32 16
+###############################################################################
 def build_encoder_cnn_16_32_16(frame):
     '''best autoencoder performance for RMSE or Binary
 
@@ -316,6 +319,29 @@ def build_decoder_cnn_16_32_16(frame):
     outputs = Activation('sigmoid', name='decoder_output')(x)
 
     frame.decoder = Model(latent_inputs, outputs, name='decoder')
+
+###############################################################################
+# Autoencoder Models
+###############################################################################
+def build_autoencoder_binary_crossentropy(frame):
+    '''use binary crossentropy for loss function.
+    '''
+    frame.autoencoder = Model(frame.inputs, frame.decoder(frame.encoder(frame.inputs)), name='autoencoder')
+    optimizer = tf.keras.optimizers.Adam(
+                    learning_rate=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, amsgrad=False,
+                    name='Adam'
+                )
+    frame.autoencoder.compile(loss='binary_crossentropy', optimizer=optimizer)
+
+def build_autoencoder_MSE(frame):
+    '''use Mean Square Error for loss function.
+    '''
+    frame.autoencoder = Model(frame.inputs, frame.decoder(frame.encoder(frame.inputs)), name='autoencoder')
+    optimizer = tf.keras.optimizers.Adam(
+                    learning_rate=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, amsgrad=False,
+                    name='Adam'
+                )
+    frame.autoencoder.compile(loss='mse', optimizer=optimizer)
 
 if __name__ == '__main__':
     pass

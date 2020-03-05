@@ -99,6 +99,9 @@ class frame_autoencoder(object):
         self.yf_test = y_test
 
     
+    def load_encoder(self, builder):
+        builder(self)
+
     def load_decoder(self, builder):
         builder(self)
 

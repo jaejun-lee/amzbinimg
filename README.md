@@ -1,8 +1,11 @@
+
 # amzbinimg
 Capstone project based on Amazon Bin Image Dataset
 
+## Presentation
+please refer [the original presentation](../docs/galvanize_36x48_abi_jaejun.pdf) in a pdf file.
 
-## Results
+## Results of the prediction model counting 5 objects in the bin image. 
 
 ![train_validation_loss](images/plot_prediction_loss_curve.png)
 

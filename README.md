@@ -3,7 +3,7 @@
 Capstone project based on Amazon Bin Image Dataset
 
 ## Presentation
-please refer [the original presentation](../docs/galvanize_36x48_abi_jaejun.pdf) in a pdf file.
+please refer [the original presentation](./docs/galvanize_36x48_abi_jaejun.pdf) in a pdf file.
 
 ## Results of the prediction model counting 5 objects in the bin image. 
 

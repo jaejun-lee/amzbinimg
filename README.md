@@ -1,9 +1,9 @@
-
 # amzbinimg
 Capstone project based on Amazon Bin Image Dataset
 
 ## Presentation
-please refer [the original presentation](./docs/galvanize_36x48_abi_jaejun.pdf) in a pdf file.
+* [The poster](./docs/galvanize_36x48_abi_jaejun.pdf)
+* [The Jupyter Notebook](./notebooks/run_autoencoder_presentation_ver2.ipynb)
 
 ## Results of the prediction model counting 5 objects in the bin image. 
 
